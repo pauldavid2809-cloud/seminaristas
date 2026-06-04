@@ -13,7 +13,8 @@ let state = {
     records: [],
     tasks: [],
     dailyActivities: [],
-    paulTodayActivities: []
+    paulTodayActivities: [],
+    paulRecentActivities: []
 };
 
 // Global chart instances
@@ -35,6 +36,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!isSupabaseConfigured) {
         showConfigWarning();
     }
+    // Check if Emily is authenticated in sessionStorage
+    const isEmilyLogged = sessionStorage.getItem("mindreg_emily_logged_in") === "true";
+    state.activeRole = isEmilyLogged ? 'emily' : 'paul';
+    state.activeTab = isEmilyLogged ? 'emily-dashboard' : 'paul-dashboard';
+
     await initDatabase();
     setDefaultDateInput();
     renderNavigation();
@@ -67,16 +73,10 @@ function showConfigWarning() {
 
 // Sync data from Supabase Cloud
 async function initDatabase() {
-    // Load active role simulation preference from local storage
-    const storedRole = localStorage.getItem("mindreg_active_role");
-    if (storedRole) {
-        state.activeRole = storedRole;
-        if (state.activeRole === 'paul') {
-            state.activeTab = 'paul-dashboard';
-        } else {
-            state.activeTab = 'emily-dashboard';
-        }
-    }
+    // Check if Emily is authenticated in sessionStorage
+    const isEmilyLogged = sessionStorage.getItem("mindreg_emily_logged_in") === "true";
+    state.activeRole = isEmilyLogged ? 'emily' : 'paul';
+    state.activeTab = isEmilyLogged ? 'emily-dashboard' : 'paul-dashboard';
     
     // Sync UI view theme class
     updateThemeClass();
@@ -133,21 +133,16 @@ async function initDatabase() {
 }
 
 function updateThemeClass() {
-    const btnPaul = document.getElementById('btn-role-paul');
-    const btnEmily = document.getElementById('btn-role-emily');
     const badgeText = document.getElementById('role-badge-text');
 
     if (state.activeRole === 'paul') {
         document.body.classList.remove('role-emily-theme');
-        if (btnPaul) btnPaul.classList.add('active');
-        if (btnEmily) btnEmily.classList.remove('active');
-        if (badgeText) badgeText.innerText = "Paul (Paciente)";
+        if (badgeText) badgeText.innerText = "Paul (Paciente) 🐢";
     } else {
         document.body.classList.add('role-emily-theme');
-        if (btnPaul) btnPaul.classList.remove('active');
-        if (btnEmily) btnEmily.classList.add('active');
-        if (badgeText) badgeText.innerText = "Emily (Psicóloga)";
+        if (badgeText) badgeText.innerText = "Psic. Emily Mejias";
     }
+    renderAuthBar();
 }
 
 // Set current time in record form date picker
@@ -167,6 +162,7 @@ function setDefaultDateInput() {
 // Render dynamic tabs depending on the active role
 function renderNavigation() {
     const navContainer = document.getElementById("nav-links-container");
+    if (!navContainer) return;
     navContainer.innerHTML = "";
 
     const paulLinks = [
@@ -196,12 +192,9 @@ function renderNavigation() {
     lucide.createIcons();
 }
 
-// Handle switching between patient and therapist simulator views
+// Handle switching between patient and therapist views
 function switchRole(role) {
     state.activeRole = role;
-    localStorage.setItem("mindreg_active_role", role);
-    
-    // Choose default tab
     state.activeTab = role === 'paul' ? 'paul-dashboard' : 'emily-dashboard';
     
     updateThemeClass();
@@ -209,8 +202,275 @@ function switchRole(role) {
     navigateToTab(state.activeTab);
 }
 
-// Tab navigation handler
+// Render Session/Auth Bar in Header
+function renderAuthBar() {
+    const authBar = document.getElementById("session-auth-bar");
+    if (!authBar) return;
+
+    if (state.activeRole === 'paul') {
+        authBar.innerHTML = `
+            <span class="user-display-name" style="font-family: var(--font-heading); font-weight: 600; font-size: 0.95rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="user" style="width: 1.1rem; height: 1.1rem; color: var(--color-patient);"></i> Paul (Paciente) 🐢
+            </span>
+            <button id="btn-login-emily" class="btn btn-secondary btn-sm" onclick="showTherapistAuthModal()" style="padding: 0.4rem 0.85rem; font-size: 0.8rem; border-radius: var(--radius-sm);">
+                <i data-lucide="lock" style="width: 0.9rem; height: 0.9rem; vertical-align: text-bottom; margin-right: 0.25rem;"></i> Acceso Psicóloga
+            </button>
+        `;
+    } else {
+        authBar.innerHTML = `
+            <span class="user-display-name" style="font-family: var(--font-heading); font-weight: 600; font-size: 0.95rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="shield-check" style="width: 1.1rem; height: 1.1rem; color: var(--color-psy);"></i> Psic. Emily
+            </span>
+            <button id="btn-logout-emily" class="btn btn-secondary btn-sm" onclick="logoutEmily()" style="padding: 0.4rem 0.85rem; font-size: 0.8rem; border-radius: var(--radius-sm); border-color: rgba(13, 148, 136, 0.25); color: var(--color-psy);">
+                <i data-lucide="log-out" style="width: 0.9rem; height: 0.9rem; vertical-align: text-bottom; margin-right: 0.25rem;"></i> Cerrar Sesión
+            </button>
+        `;
+    }
+    lucide.createIcons();
+}
+
+// --- THERAPIST PASSWORD AUTHENTICATION LOGIC ---
+
+let isPasswordSet = false;
+let storedPasswordHash = null;
+
+// SHA-256 Hashing helper
+async function sha256(message) {
+    const msgBuffer = new TextEncoder().encode(message);                    
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return hashHex;
+}
+
+// Check database to see if a password is set
+async function checkStoredPassword() {
+    if (!supabaseClient) return false;
+    try {
+        const { data, error } = await supabaseClient
+            .from('app_config')
+            .select('value')
+            .eq('key', 'therapist_password')
+            .single();
+
+        if (error && error.code !== 'PGRST116') { // PGRST116 is code for 0 rows returned
+            throw error;
+        }
+
+        if (data && data.value) {
+            isPasswordSet = true;
+            storedPasswordHash = data.value;
+            return true;
+        } else {
+            isPasswordSet = false;
+            storedPasswordHash = null;
+            return false;
+        }
+    } catch (err) {
+        console.error("Error al consultar contraseña en Supabase:", err);
+        return false;
+    }
+}
+
+// Modals management for therapist login
+async function showTherapistAuthModal() {
+    const modal = document.getElementById("modal-therapist-auth");
+    const desc = document.getElementById("auth-modal-desc");
+    const confirmGroup = document.getElementById("pwd-confirm-group");
+    const submitBtn = document.getElementById("btn-auth-submit");
+    const errorMsg = document.getElementById("auth-error-msg");
+
+    if (errorMsg) errorMsg.style.display = "none";
+    const form = document.getElementById("form-therapist-auth");
+    if (form) form.reset();
+
+    if (modal) modal.classList.add("active");
+
+    if (desc) desc.innerText = "Cargando configuración de seguridad...";
+    if (submitBtn) submitBtn.disabled = true;
+
+    const hasPassword = await checkStoredPassword();
+    if (submitBtn) submitBtn.disabled = false;
+
+    if (hasPassword) {
+        if (desc) desc.innerText = "Ingresa la contraseña para ingresar al panel clínico.";
+        if (confirmGroup) confirmGroup.style.display = "none";
+        if (submitBtn) submitBtn.innerText = "Ingresar";
+    } else {
+        if (desc) desc.innerHTML = `<span style="color: var(--color-psy); font-weight: 600;">Es la primera vez que ingresas.</span> Define una contraseña de acceso para la Psicóloga. Esta contraseña no podrá ser vista por el paciente.`;
+        if (confirmGroup) confirmGroup.style.display = "block";
+        if (submitBtn) submitBtn.innerText = "Crear Contraseña";
+    }
+}
+
+function closeTherapistAuthModal() {
+    const modal = document.getElementById("modal-therapist-auth");
+    if (modal) modal.classList.remove("active");
+}
+
+async function handleTherapistAuth(e) {
+    e.preventDefault();
+    const errorMsg = document.getElementById("auth-error-msg");
+    if (errorMsg) errorMsg.style.display = "none";
+
+    const passwordInput = document.getElementById("therapist-password-input").value;
+    const confirmInput = document.getElementById("therapist-password-confirm") ? document.getElementById("therapist-password-confirm").value : "";
+
+    const hasPassword = isPasswordSet;
+
+    if (!hasPassword) {
+        // First-time setting up password
+        if (passwordInput !== confirmInput) {
+            if (errorMsg) {
+                errorMsg.innerText = "Las contraseñas no coinciden.";
+                errorMsg.style.display = "block";
+            }
+            return;
+        }
+        if (passwordInput.length < 4) {
+            if (errorMsg) {
+                errorMsg.innerText = "La contraseña debe tener al menos 4 caracteres.";
+                errorMsg.style.display = "block";
+            }
+            return;
+        }
+
+        const hashed = await sha256(passwordInput);
+        if (supabaseClient) {
+            try {
+                const { error } = await supabaseClient
+                    .from('app_config')
+                    .upsert([{ key: 'therapist_password', value: hashed, updated_at: new Date().toISOString() }]);
+
+                if (error) throw error;
+
+                isPasswordSet = true;
+                storedPasswordHash = hashed;
+            } catch (err) {
+                console.error("Error al guardar contraseña en Supabase:", err);
+                if (errorMsg) {
+                    errorMsg.innerText = "Error al guardar contraseña en la nube.";
+                    errorMsg.style.display = "block";
+                }
+                return;
+            }
+        }
+    } else {
+        // Checking existing password
+        const hashed = await sha256(passwordInput);
+        if (hashed !== storedPasswordHash) {
+            if (errorMsg) {
+                errorMsg.innerText = "Contraseña incorrecta.";
+                errorMsg.style.display = "block";
+            }
+            return;
+        }
+    }
+
+    // Auth success: login and switch role
+    sessionStorage.setItem("mindreg_emily_logged_in", "true");
+    closeTherapistAuthModal();
+    switchRole('emily');
+}
+
+function logoutEmily() {
+    sessionStorage.removeItem("mindreg_emily_logged_in");
+    switchRole('paul');
+}
+
+// Modals management for password changing
+function showChangePasswordModal() {
+    const modal = document.getElementById("modal-change-password");
+    const errorMsg = document.getElementById("change-pwd-error-msg");
+    const successMsg = document.getElementById("change-pwd-success-msg");
+
+    if (errorMsg) errorMsg.style.display = "none";
+    if (successMsg) successMsg.style.display = "none";
+    const form = document.getElementById("form-change-password");
+    if (form) form.reset();
+
+    if (modal) modal.classList.add("active");
+}
+
+function closeChangePasswordModal() {
+    const modal = document.getElementById("modal-change-password");
+    if (modal) modal.classList.remove("active");
+}
+
+async function handleChangePasswordSubmit(e) {
+    e.preventDefault();
+    const errorMsg = document.getElementById("change-pwd-error-msg");
+    const successMsg = document.getElementById("change-pwd-success-msg");
+
+    if (errorMsg) errorMsg.style.display = "none";
+    if (successMsg) successMsg.style.display = "none";
+
+    const currentPwd = document.getElementById("change-pwd-current").value;
+    const newPwd = document.getElementById("change-pwd-new").value;
+    const confirmPwd = document.getElementById("change-pwd-confirm").value;
+
+    const currentHashed = await sha256(currentPwd);
+
+    // Refresh storing check
+    await checkStoredPassword();
+    if (currentHashed !== storedPasswordHash) {
+        if (errorMsg) {
+            errorMsg.innerText = "La contraseña actual es incorrecta.";
+            errorMsg.style.display = "block";
+        }
+        return;
+    }
+
+    if (newPwd !== confirmPwd) {
+        if (errorMsg) {
+            errorMsg.innerText = "Las nuevas contraseñas no coinciden.";
+            errorMsg.style.display = "block";
+        }
+        return;
+    }
+
+    if (newPwd.length < 4) {
+        if (errorMsg) {
+            errorMsg.innerText = "La nueva contraseña debe tener al menos 4 caracteres.";
+            errorMsg.style.display = "block";
+        }
+        return;
+    }
+
+    const newHashed = await sha256(newPwd);
+
+    if (supabaseClient) {
+        try {
+            const { error } = await supabaseClient
+                .from('app_config')
+                .upsert([{ key: 'therapist_password', value: newHashed, updated_at: new Date().toISOString() }]);
+
+            if (error) throw error;
+
+            storedPasswordHash = newHashed;
+            if (successMsg) {
+                successMsg.innerText = "¡Contraseña actualizada con éxito!";
+                successMsg.style.display = "block";
+            }
+            setTimeout(() => {
+                closeChangePasswordModal();
+            }, 1200);
+        } catch (err) {
+            console.error("Error al actualizar la contraseña:", err);
+            if (errorMsg) {
+                errorMsg.innerText = "Error al guardar en la nube.";
+                errorMsg.style.display = "block";
+            }
+        }
+    }
+}
+
 async function navigateToTab(tabId) {
+    // Security check: restrict clinical tabs to Emily
+    const therapistTabs = ['emily-dashboard', 'emily-records', 'emily-assign-task'];
+    if (therapistTabs.includes(tabId) && state.activeRole !== 'emily') {
+        tabId = 'paul-dashboard';
+    }
     state.activeTab = tabId;
     
     // Hide all sections
@@ -286,6 +546,10 @@ async function navigateToTab(tabId) {
         setDefaultDateInput();
         updateIntensityDisplay(50);
         document.getElementById("form-self-record").reset();
+        const otherGroup = document.getElementById("group-other-emotion");
+        if (otherGroup) otherGroup.style.display = "none";
+        const otherInput = document.getElementById("record-emotion-other-text");
+        if (otherInput) otherInput.required = false;
         document.getElementById("record-intensity").value = 50;
     } else if (tabId === 'paul-tasks') {
         renderPaulTasks();
@@ -323,6 +587,14 @@ async function saveSelfRecord(e) {
     document.querySelectorAll("input[name='emotions']:checked").forEach(checkbox => {
         emotionsChecked.push(checkbox.value);
     });
+
+    const otherCheckbox = document.getElementById("checkbox-emotion-other");
+    if (otherCheckbox && otherCheckbox.checked) {
+        const otherVal = document.getElementById("record-emotion-other-text").value.trim();
+        if (otherVal) {
+            emotionsChecked.push(otherVal);
+        }
+    }
 
     if (emotionsChecked.length === 0) {
         alert("Por favor, selecciona al menos una emoción.");
@@ -437,7 +709,7 @@ function renderPaulTasks() {
             <div class="card empty-state" style="grid-column: 1/-1;">
                 <i data-lucide="check-square"></i>
                 <h3>No hay tareas</h3>
-                <p>La Dra. Emily aún no ha asignado tareas en el sistema.</p>
+                <p>La Psic. Emily aún no ha asignado tareas en el sistema.</p>
             </div>
         `;
         lucide.createIcons();
@@ -743,7 +1015,7 @@ function renderPaulHistory(filteredRecords = null) {
                     <div class="record-feedback-section">
                         <div class="feedback-card-content">
                             <div class="feedback-header">
-                                <span><i data-lucide="message-square"></i> Dra. Emily Mejias</span>
+                                <span><i data-lucide="message-square"></i> Psic. Emily Mejias</span>
                                 <span>${formatDateTimeString(item.feedbackDate)}</span>
                             </div>
                             <p class="feedback-text">${item.feedback}</p>
@@ -1748,33 +2020,46 @@ function renderEmilyRecentActivities() {
 
     sortedDates.forEach(dateStr => {
         const activities = grouped[dateStr];
+        const completedCount = activities.filter(act => act.completed).length;
+        const totalCount = activities.length;
+
         const dateSection = document.createElement("div");
         dateSection.className = "grouped-date-section";
-        dateSection.style.marginBottom = "1.25rem";
 
         const friendlyDate = formatFriendlyDate(dateStr);
+        const dayOfWeek = getDayOfWeekName(dateStr);
+        const fullDateTitle = `${dayOfWeek}, ${friendlyDate}`;
         
         let itemsHTML = "";
         activities.forEach(act => {
             itemsHTML += `
-                <div class="daily-habit-item ${act.completed ? 'completed' : ''}" style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.6rem 0.8rem; margin-bottom: 0.5rem; background: rgba(255, 255, 255, 0.01); border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
-                    <label class="habit-checkbox-label" style="display: flex; align-items: center; gap: 0.65rem; cursor: default; flex-grow: 1; margin: 0;">
-                        <input type="checkbox" disabled ${act.completed ? 'checked' : ''} style="pointer-events: none;">
-                        <span style="font-size: 0.85rem;">${act.content}</span>
-                    </label>
-                    <span class="task-status-badge ${act.completed ? 'completed' : ''}" style="font-size: 0.65rem; padding: 0.15rem 0.35rem; white-space: nowrap;">
+                <div class="daily-habit-item ${act.completed ? 'completed' : ''}" style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.65rem 0.85rem; margin-bottom: 0.5rem; background: rgba(255, 255, 255, 0.55); border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+                    <div class="habit-text-wrapper" style="display: flex; align-items: center; gap: 0.65rem; flex-grow: 1; margin: 0; color: var(--text-primary);">
+                        <i data-lucide="${act.completed ? 'check-circle-2' : 'circle'}" style="width: 1rem; height: 1rem; color: ${act.completed ? 'var(--color-psy)' : 'var(--text-muted)'}; flex-shrink: 0;"></i>
+                        <span style="font-size: 0.85rem; font-weight: 500; ${act.completed ? 'text-decoration: line-through; color: var(--text-muted);' : ''}">${act.content}</span>
+                    </div>
+                    <span class="task-status-badge ${act.completed ? 'completed' : ''}" style="font-size: 0.65rem; padding: 0.15rem 0.45rem; white-space: nowrap; font-weight: 600;">
                         ${act.completed ? 'Hecho' : 'Pendiente'}
                     </span>
                 </div>
             `;
         });
 
+        // The accordion item HTML
         dateSection.innerHTML = `
-            <div class="grouped-date-header" style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.03); padding-bottom: 0.25rem; display: flex; align-items: center; gap: 0.5rem;">
-                <i data-lucide="calendar" style="width: 0.9rem; height: 0.9rem; color: var(--color-psy);"></i> ${friendlyDate}
-            </div>
+            <button class="grouped-date-header" onclick="toggleAccordionSection(this)">
+                <span class="header-left">
+                    <i data-lucide="chevron-right" class="accordion-chevron"></i>
+                    <span class="header-title">${fullDateTitle}</span>
+                </span>
+                <span class="task-status-badge completed" style="background: rgba(13, 148, 136, 0.1); color: var(--color-psy); font-size: 0.75rem; padding: 0.25rem 0.5rem; border: 1px solid rgba(13, 148, 136, 0.15); font-weight: 600;">
+                    ${completedCount}/${totalCount} completadas
+                </span>
+            </button>
             <div class="grouped-date-items">
-                ${itemsHTML}
+                <div style="padding-top: 0.25rem; padding-bottom: 0.5rem;">
+                    ${itemsHTML}
+                </div>
             </div>
         `;
         container.appendChild(dateSection);
@@ -1782,3 +2067,43 @@ function renderEmilyRecentActivities() {
 
     lucide.createIcons();
 }
+
+// Global/window helper functions for accordion and weekdays
+window.toggleAccordionSection = function(btn) {
+    btn.classList.toggle("active");
+    const content = btn.nextElementSibling;
+    if (content.classList.contains("expanded")) {
+        content.classList.remove("expanded");
+        content.style.maxHeight = null;
+    } else {
+        content.classList.add("expanded");
+        content.style.maxHeight = content.scrollHeight + "px";
+    }
+};
+
+window.getDayOfWeekName = function(dateStr) {
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return "";
+    const date = new Date(parts[0], parts[1] - 1, parts[2]);
+    const days = [
+        "Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"
+    ];
+    return days[date.getDay()];
+};
+
+window.toggleOtherEmotionInput = function(checkbox) {
+    const group = document.getElementById("group-other-emotion");
+    if (group) {
+        group.style.display = checkbox.checked ? "block" : "none";
+        const input = document.getElementById("record-emotion-other-text");
+        if (input) {
+            if (checkbox.checked) {
+                input.focus();
+                input.required = true;
+            } else {
+                input.value = "";
+                input.required = false;
+            }
+        }
+    }
+};

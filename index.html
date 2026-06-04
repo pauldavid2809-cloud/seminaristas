@@ -26,16 +26,8 @@
                 <span class="logo-text">MindReg</span>
             </div>
             
-            <div class="role-simulator">
-                <span class="simulator-label">Simular Usuario:</span>
-                <div class="toggle-container">
-                    <button id="btn-role-paul" class="role-toggle-btn active" onclick="switchRole('paul')">
-                        <i data-lucide="user"></i> Paul (Paciente)
-                    </button>
-                    <button id="btn-role-emily" class="role-toggle-btn" onclick="switchRole('emily')">
-                        <i data-lucide="shield-check"></i> Dra. Emily (Psicóloga)
-                    </button>
-                </div>
+            <div class="session-auth-bar" id="session-auth-bar">
+                <!-- Will be dynamically populated by JS -->
             </div>
         </header>
 
@@ -62,7 +54,7 @@
                         <div class="welcome-card card">
                             <div class="card-glow"></div>
                             <h2>¡Hola, Paul!</h2>
-                            <p>Tu bienestar emocional es lo más importante. Aquí puedes registrar tu estado y ver las indicaciones de la Dra. Emily.</p>
+                            <p>Tu bienestar emocional es lo más importante. Aquí puedes registrar tu estado y ver las indicaciones de la Psic. Emily.</p>
                             <div class="quick-actions">
                                 <button class="btn btn-primary" onclick="navigateToTab('paul-new-record')">
                                     <i data-lucide="plus-circle"></i> Nuevo Autorregistro
@@ -187,6 +179,15 @@
                                     <input type="checkbox" name="emotions" value="Calma" class="emotion-checkbox">
                                     <span class="emotion-chip emo-calma">Calma</span>
                                 </label>
+                                <label class="emotion-checkbox-label">
+                                    <input type="checkbox" id="checkbox-emotion-other" class="emotion-checkbox" onchange="toggleOtherEmotionInput(this)">
+                                    <span class="emotion-chip emo-otro">Otro</span>
+                                </label>
+                            </div>
+                            <!-- Hidden text field for other emotion -->
+                            <div class="form-group" id="group-other-emotion" style="display: none; margin-top: 0.75rem;">
+                                <label for="record-emotion-other-text" style="font-size: 0.85rem; font-weight: 600;"><i data-lucide="heart-handshake"></i> Escribe otra emoción</label>
+                                <input type="text" id="record-emotion-other-text" class="form-control" placeholder="Ej: Vergüenza, Melancolía, Sorpresa...">
                             </div>
                         </div>
 
@@ -297,7 +298,7 @@
                 <div class="tasks-page-layout">
                     <div class="tasks-header">
                         <h2>Mis Tareas de Terapia</h2>
-                        <p>Estas son las actividades que la Dra. Emily ha asignado para tu desarrollo personal.</p>
+                        <p>Estas son las actividades que la Psic. Emily ha asignado para tu desarrollo personal.</p>
                     </div>
 
                     <div class="tasks-grid-list" id="paul-tasks-container">
@@ -313,8 +314,8 @@
                     <div class="psychologist-profile">
                         <div class="avatar-circle">EM</div>
                         <div>
-                            <h2>Dra. Emily Mejias</h2>
-                            <p class="role-desc">Psicóloga Clínica • Supervisando a <strong>Paul Urdaneta</strong></p>
+                            <h2>Psic. Emily Mejias</h2>
+                            <p class="role-desc">Psicóloga Clínica • Supervisando a <strong>Paul Urdaneta 🐢</strong></p>
                         </div>
                     </div>
                     
@@ -367,13 +368,16 @@
                                 <button class="btn btn-secondary btn-full-width margin-top-sm" onclick="navigateToTab('emily-records')">
                                     <i data-lucide="eye"></i> Ver Todos los Registros
                                 </button>
+                                <button class="btn btn-text text-teal btn-full-width margin-top-sm" onclick="showChangePasswordModal()">
+                                    <i data-lucide="key"></i> Cambiar Contraseña
+                                </button>
                             </div>
                         </div>
 
-                        <!-- Actividades de Paul (Hoy) -->
+                        <!-- Actividades de Paul (Por Día) -->
                         <div class="card daily-activities-card margin-top-md">
-                            <h3><i data-lucide="list-todo" class="header-icon text-teal"></i> Actividades de Paul (Hoy)</h3>
-                            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: -0.25rem; margin-bottom: 0.75rem;">Lista de actividades registradas por Paul durante el día de hoy.</p>
+                            <h3><i data-lucide="list-todo" class="header-icon text-teal"></i> Actividades de Paul (Por Día)</h3>
+                            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: -0.25rem; margin-bottom: 0.75rem;">Actividades registradas por Paul organizadas por día, desde la última consulta.</p>
                             <div class="daily-checklist-items" id="emily-activities-container">
                                 <!-- Creadas dinámicamente por JS -->
                             </div>
@@ -518,7 +522,7 @@
             </div>
             <form id="form-consultation" onsubmit="saveConsultation(event)">
                 <div class="modal-body">
-                    <p class="modal-desc">Registra la fecha y hora en que asististe a consulta con la Dra. Emily y añade notas o técnicas trabajadas en la sesión.</p>
+                    <p class="modal-desc">Registra la fecha y hora de la consulta realizada con el paciente Paul y añade las notas o técnicas trabajadas en la sesión.</p>
                     
                     <div class="form-group">
                         <label for="consultation-date"><i data-lucide="calendar"></i> Fecha y Hora de la Consulta</label>
@@ -598,6 +602,69 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeClinicalCommentModal()">Cancelar</button>
                     <button type="submit" class="btn btn-teal">Guardar Comentario</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 4: THERAPIST AUTHENTICATION -->
+    <div id="modal-therapist-auth" class="modal-overlay">
+        <div class="modal-content max-width-xs">
+            <div class="modal-header">
+                <h3><i data-lucide="lock" class="text-teal"></i> Acceso Psicóloga</h3>
+                <button class="modal-close" onclick="closeTherapistAuthModal()">&times;</button>
+            </div>
+            <form id="form-therapist-auth" onsubmit="handleTherapistAuth(event)">
+                <div class="modal-body">
+                    <p class="modal-desc" id="auth-modal-desc">Ingresa la contraseña para ingresar al panel clínico.</p>
+                    
+                    <div class="form-group">
+                        <label for="therapist-password-input"><i data-lucide="key-round"></i> Contraseña</label>
+                        <input type="password" id="therapist-password-input" class="form-control" placeholder="Escribe la contraseña..." required>
+                    </div>
+                    
+                    <div class="form-group margin-top-sm" id="pwd-confirm-group" style="display: none;">
+                        <label for="therapist-password-confirm"><i data-lucide="shield-check"></i> Confirmar Contraseña</label>
+                        <input type="password" id="therapist-password-confirm" class="form-control" placeholder="Repite la contraseña...">
+                    </div>
+                    
+                    <div id="auth-error-msg" class="auth-error-message" style="color: #ef4444; font-size: 0.8rem; margin-top: 0.5rem; display: none;"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeTherapistAuthModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-teal" id="btn-auth-submit">Ingresar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 5: CHANGE PASSWORD -->
+    <div id="modal-change-password" class="modal-overlay">
+        <div class="modal-content max-width-xs">
+            <div class="modal-header">
+                <h3><i data-lucide="key" class="text-teal"></i> Cambiar Contraseña</h3>
+                <button class="modal-close" onclick="closeChangePasswordModal()">&times;</button>
+            </div>
+            <form id="form-change-password" onsubmit="handleChangePasswordSubmit(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="change-pwd-current"><i data-lucide="lock"></i> Contraseña Actual</label>
+                        <input type="password" id="change-pwd-current" class="form-control" placeholder="Escribe la contraseña actual..." required>
+                    </div>
+                    <div class="form-group margin-top-sm">
+                        <label for="change-pwd-new"><i data-lucide="key-round"></i> Nueva Contraseña</label>
+                        <input type="password" id="change-pwd-new" class="form-control" placeholder="Escribe la nueva contraseña..." required>
+                    </div>
+                    <div class="form-group margin-top-sm">
+                        <label for="change-pwd-confirm"><i data-lucide="shield-alert"></i> Confirmar Nueva Contraseña</label>
+                        <input type="password" id="change-pwd-confirm" class="form-control" placeholder="Confirma la nueva contraseña..." required>
+                    </div>
+                    <div id="change-pwd-error-msg" style="color: #ef4444; font-size: 0.8rem; margin-top: 0.5rem; display: none;"></div>
+                    <div id="change-pwd-success-msg" style="color: #10b981; font-size: 0.8rem; margin-top: 0.5rem; display: none;"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeChangePasswordModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-teal">Actualizar Contraseña</button>
                 </div>
             </form>
         </div>
