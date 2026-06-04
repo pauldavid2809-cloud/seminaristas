@@ -290,7 +290,7 @@ async function navigateToTab(tabId) {
     } else if (tabId === 'paul-tasks') {
         renderPaulTasks();
     } else if (tabId === 'emily-dashboard') {
-        await syncEmilyTodayActivities();
+        await syncEmilyRecentActivities();
         renderEmilyDashboard();
     } else if (tabId === 'emily-records') {
         renderEmilyRecords();
@@ -926,7 +926,7 @@ function renderEmilyDashboard() {
 
     renderChart('chart-emily-evolution', 'emily');
     renderEmilyRecentRegistries();
-    renderEmilyTodayActivities();
+    renderEmilyRecentActivities();
 }
 
 // Assign and save new therapists tasks in Supabase
@@ -1684,60 +1684,100 @@ function renderEmilyRecentRegistries() {
     lucide.createIcons();
 }
 
-async function syncEmilyTodayActivities() {
-    const todayStr = getTodayLocalDateStr();
-    state.paulTodayActivities = [];
+async function syncEmilyRecentActivities() {
+    state.paulRecentActivities = [];
 
     if (!supabaseClient) return;
 
     try {
         const { data, error } = await supabaseClient
             .from('daily_activities')
-            .select('*')
-            .eq('date', todayStr);
+            .select('*');
 
         if (error) throw error;
 
         if (data) {
-            state.paulTodayActivities = data;
+            // 1. Encontrar la última consulta
+            const consultations = state.records
+                .filter(r => r.type === 'consultation')
+                .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            let lastConsultationDate = null;
+            if (consultations.length > 0) {
+                const lastDateStr = consultations[0].date.split('T')[0];
+                lastConsultationDate = new Date(lastDateStr);
+            }
+
+            // 2. Filtrar actividades desde esa fecha (inclusive)
+            state.paulRecentActivities = data.filter(act => {
+                if (!lastConsultationDate) return true; // Mostrar todo si no hay consulta
+                const actDate = new Date(act.date);
+                return actDate >= lastConsultationDate;
+            });
         }
     } catch (err) {
         console.error("Error sincronizando actividades de Paul:", err);
     }
 }
 
-function renderEmilyTodayActivities() {
+function renderEmilyRecentActivities() {
     const container = document.getElementById("emily-activities-container");
     if (!container) return;
     container.innerHTML = "";
 
-    if (state.paulTodayActivities.length === 0) {
+    if (state.paulRecentActivities.length === 0) {
         container.innerHTML = `
             <div class="empty-state-mini" style="text-align: center; padding: 1rem; border: 1px dashed var(--border-color); border-radius: var(--radius-sm); width: 100%;">
-                <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">Paul no ha registrado actividades hoy todavía.</p>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">Paul no ha registrado actividades desde la última consulta.</p>
             </div>
         `;
         return;
     }
 
-    state.paulTodayActivities.forEach(act => {
-        const item = document.createElement("div");
-        item.className = `daily-habit-item ${act.completed ? 'completed' : ''}`;
-        item.style.display = "flex";
-        item.style.alignItems = "center";
-        item.style.justifyContent = "space-between";
-        item.style.gap = "0.5rem";
+    // Agrupar actividades por fecha
+    const grouped = {};
+    state.paulRecentActivities.forEach(act => {
+        if (!grouped[act.date]) {
+            grouped[act.date] = [];
+        }
+        grouped[act.date].push(act);
+    });
 
-        item.innerHTML = `
-            <label class="habit-checkbox-label" style="display: flex; align-items: center; gap: 0.75rem; cursor: default; flex-grow: 1;">
-                <input type="checkbox" disabled ${act.completed ? 'checked' : ''}>
-                <span>${act.content}</span>
-            </label>
-            <span class="task-status-badge ${act.completed ? 'completed' : ''}" style="font-size: 0.7rem; padding: 0.15rem 0.35rem; white-space: nowrap;">
-                ${act.completed ? 'Hecho' : 'Pendiente'}
-            </span>
+    // Ordenar fechas en orden descendente (más recientes primero)
+    const sortedDates = Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a));
+
+    sortedDates.forEach(dateStr => {
+        const activities = grouped[dateStr];
+        const dateSection = document.createElement("div");
+        dateSection.className = "grouped-date-section";
+        dateSection.style.marginBottom = "1.25rem";
+
+        const friendlyDate = formatFriendlyDate(dateStr);
+        
+        let itemsHTML = "";
+        activities.forEach(act => {
+            itemsHTML += `
+                <div class="daily-habit-item ${act.completed ? 'completed' : ''}" style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.6rem 0.8rem; margin-bottom: 0.5rem; background: rgba(255, 255, 255, 0.01); border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+                    <label class="habit-checkbox-label" style="display: flex; align-items: center; gap: 0.65rem; cursor: default; flex-grow: 1; margin: 0;">
+                        <input type="checkbox" disabled ${act.completed ? 'checked' : ''} style="pointer-events: none;">
+                        <span style="font-size: 0.85rem;">${act.content}</span>
+                    </label>
+                    <span class="task-status-badge ${act.completed ? 'completed' : ''}" style="font-size: 0.65rem; padding: 0.15rem 0.35rem; white-space: nowrap;">
+                        ${act.completed ? 'Hecho' : 'Pendiente'}
+                    </span>
+                </div>
+            `;
+        });
+
+        dateSection.innerHTML = `
+            <div class="grouped-date-header" style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.03); padding-bottom: 0.25rem; display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="calendar" style="width: 0.9rem; height: 0.9rem; color: var(--color-psy);"></i> ${friendlyDate}
+            </div>
+            <div class="grouped-date-items">
+                ${itemsHTML}
+            </div>
         `;
-        container.appendChild(item);
+        container.appendChild(dateSection);
     });
 
     lucide.createIcons();
