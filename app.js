@@ -557,7 +557,11 @@ async function saveConsultation(e) {
 
     state.records.push(newConsultation);
     closeConsultationModal();
-    renderPaulDashboard();
+    if (state.activeRole === 'paul') {
+        renderPaulDashboard();
+    } else {
+        renderEmilyDashboard();
+    }
 }
 
 // Open / Close Task Reply Modal

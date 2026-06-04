@@ -67,9 +67,6 @@
                                 <button class="btn btn-primary" onclick="navigateToTab('paul-new-record')">
                                     <i data-lucide="plus-circle"></i> Nuevo Autorregistro
                                 </button>
-                                <button id="btn-log-consultation" class="btn btn-accent" onclick="openConsultationModal()">
-                                    <i data-lucide="calendar-heart"></i> Hoy hubo consulta
-                                </button>
                             </div>
                         </div>
 
@@ -344,7 +341,10 @@
                             </div>
                             
                             <div class="action-card-btn-container">
-                                <button class="btn btn-primary btn-full-width" onclick="navigateToTab('emily-assign-task')">
+                                <button id="btn-log-consultation" class="btn btn-accent btn-full-width" onclick="openConsultationModal()">
+                                    <i data-lucide="calendar-heart"></i> Hoy hubo consulta
+                                </button>
+                                <button class="btn btn-primary btn-full-width margin-top-sm" onclick="navigateToTab('emily-assign-task')">
                                     <i data-lucide="plus-circle"></i> Asignar Nueva Tarea
                                 </button>
                                 <button class="btn btn-secondary btn-full-width margin-top-sm" onclick="navigateToTab('emily-records')">
