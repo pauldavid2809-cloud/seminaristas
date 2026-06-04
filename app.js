@@ -11,7 +11,8 @@ let state = {
     activeRole: 'paul', // 'paul' or 'emily'
     activeTab: 'paul-dashboard', // default tab
     records: [],
-    tasks: []
+    tasks: [],
+    dailyChecklist: { date: '', completedHabits: [] }
 };
 
 // Global chart instances
@@ -276,6 +277,7 @@ async function navigateToTab(tabId) {
 
     // Custom tab trigger renders
     if (tabId === 'paul-dashboard') {
+        await syncTodayChecklist();
         renderPaulDashboard();
     } else if (tabId === 'paul-history') {
         renderPaulHistory();
@@ -383,6 +385,9 @@ function renderPaulDashboard() {
 
     // 3. Render mini tasks checklist
     renderPaulMiniTasks();
+
+    // Render daily checklist
+    renderDailyChecklist();
 
     // 4. Render Evolution Chart
     renderChart('chart-paul-evolution', 'paul');
@@ -918,6 +923,7 @@ function renderEmilyDashboard() {
     }
 
     renderChart('chart-emily-evolution', 'emily');
+    renderEmilyRecentRegistries();
 }
 
 // Assign and save new therapists tasks in Supabase
@@ -1229,6 +1235,7 @@ async function saveClinicalComment(e) {
 
     closeClinicalCommentModal();
     renderEmilyRecords();
+    renderEmilyDashboard();
 }
 
 // --- DYNAMIC DUAL GRAPHS (Chart.js implementation) ---
@@ -1403,4 +1410,223 @@ function formatDateTimeString(dateTimeStr) {
     const min = String(date.getMinutes()).padStart(2, '0');
 
     return `${dd}/${mm}/${yyyy} a las ${hh}:${min} hs`;
+}
+
+// --- DAILY CHECKLIST LOGIC ---
+
+const HABITS_LIST = [
+    { id: 'meds', label: 'Tomar medicación indicada', icon: 'pill' },
+    { id: 'breathing', label: 'Ejercicio de respiración / Relajación', icon: 'wind' },
+    { id: 'registry', label: 'Registrar al menos un pensamiento automático', icon: 'clipboard-signature' },
+    { id: 'exercise', label: 'Caminar 30 min / Ejercicio físico', icon: 'footprints' },
+    { id: 'selfcare', label: '15 minutos de autocuidado / Ocio', icon: 'heart' }
+];
+
+function getTodayLocalDateStr() {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+}
+
+async function syncTodayChecklist() {
+    const todayStr = getTodayLocalDateStr();
+    state.dailyChecklist = { date: todayStr, completedHabits: [] };
+
+    if (!supabaseClient) return;
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('daily_checklist')
+            .select('*')
+            .eq('date', todayStr);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            state.dailyChecklist.completedHabits = data[0].completed_habits || [];
+        }
+    } catch (err) {
+        console.error("Error sincronizando checklist diario:", err);
+    }
+}
+
+async function toggleHabit(habitId, isChecked) {
+    const todayStr = getTodayLocalDateStr();
+    let completed = [...state.dailyChecklist.completedHabits];
+
+    if (isChecked) {
+        if (!completed.includes(habitId)) {
+            completed.push(habitId);
+        }
+    } else {
+        completed = completed.filter(id => id !== habitId);
+    }
+
+    state.dailyChecklist.completedHabits = completed;
+
+    // Actualizar base de datos
+    if (supabaseClient) {
+        try {
+            const { error } = await supabaseClient
+                .from('daily_checklist')
+                .upsert({
+                    id: `chk-${todayStr}`,
+                    date: todayStr,
+                    completed_habits: completed
+                }, { onConflict: 'date' });
+
+            if (error) throw error;
+        } catch (err) {
+            console.error("Error guardando hábito en Supabase:", err);
+        }
+    }
+
+    // Actualizar estilo visual inmediatamente
+    const itemDiv = document.getElementById(`habit-item-${habitId}`);
+    if (itemDiv) {
+        if (isChecked) {
+            itemDiv.classList.add('completed');
+        } else {
+            itemDiv.classList.remove('completed');
+        }
+    }
+}
+
+function renderDailyChecklist() {
+    const container = document.getElementById("daily-checklist-container");
+    if (!container) return;
+    container.innerHTML = "";
+
+    HABITS_LIST.forEach(habit => {
+        const isChecked = state.dailyChecklist.completedHabits.includes(habit.id);
+        const item = document.createElement("div");
+        item.id = `habit-item-${habit.id}`;
+        item.className = `daily-habit-item ${isChecked ? 'completed' : ''}`;
+
+        item.innerHTML = `
+            <label class="habit-checkbox-label">
+                <input type="checkbox" id="habit-chk-${habit.id}" 
+                    onchange="toggleHabit('${habit.id}', this.checked)" ${isChecked ? 'checked' : ''}>
+                <span><i data-lucide="${habit.icon}" style="width: 1rem; height: 1rem; vertical-align: text-bottom; margin-right: 0.25rem;"></i> ${habit.label}</span>
+            </label>
+        `;
+        container.appendChild(item);
+    });
+
+    lucide.createIcons();
+}
+
+// --- CLINICAL FILTER: NEW REGISTRIES SINCE LAST CONSULTATION ---
+
+function renderEmilyRecentRegistries() {
+    const container = document.getElementById("emily-recent-registries-container");
+    const badge = document.getElementById("emily-recent-registries-badge");
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    // 1. Encontrar la última consulta
+    const consultations = state.records
+        .filter(r => r.type === 'consultation')
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    let lastConsultationDate = null;
+    let friendlyDate = "No registrada";
+    if (consultations.length > 0) {
+        lastConsultationDate = new Date(consultations[0].date);
+        friendlyDate = formatDateTimeString(consultations[0].date);
+    }
+
+    // 2. Filtrar registros nuevos de Paul
+    const recentRecords = state.records.filter(r => {
+        if (r.type !== 'record') return false;
+        if (!lastConsultationDate) return true;
+        return new Date(r.date) > lastConsultationDate;
+    }).sort((a, b) => new Date(b.date) - new Date(a.date)); // nuevos primero
+
+    if (badge) {
+        badge.innerText = `${recentRecords.length} nuevos`;
+        if (recentRecords.length > 0) {
+            badge.style.background = "rgba(16, 185, 129, 0.15)";
+            badge.style.color = "#34d399";
+        } else {
+            badge.style.background = "rgba(255, 255, 255, 0.05)";
+            badge.style.color = "var(--text-secondary)";
+        }
+    }
+
+    if (recentRecords.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state-mini" style="text-align: center; padding: 1.5rem; background: rgba(255, 255, 255, 0.01); border: 1px dashed var(--border-color); border-radius: var(--radius-md);">
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">🎉 Paul no tiene autorregistros nuevos desde la última sesión (${friendlyDate}).</p>
+            </div>
+        `;
+        return;
+    }
+
+    recentRecords.forEach(item => {
+        const itemDiv = document.createElement("div");
+        itemDiv.className = "recent-registry-item card";
+        itemDiv.style.background = "rgba(255, 255, 255, 0.01)";
+        itemDiv.style.padding = "1rem";
+        itemDiv.style.borderRadius = "var(--radius-md)";
+        itemDiv.style.border = "1px solid var(--border-color)";
+
+        let emotionsChips = "";
+        item.emotions.forEach(emo => {
+            const emotionClass = "emo-" + emo.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            emotionsChips += `<span class="emotion-chip size-small ${emotionClass}" style="font-size: 0.7rem; padding: 0.15rem 0.4rem;">${emo}</span> `;
+        });
+
+        const intensityClass = item.intensity >= 80 ? 'high-intensity' : '';
+        
+        let feedbackHTML = "";
+        let actionBtnHTML = `
+            <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="openClinicalCommentModal('${item.id}')">
+                <i data-lucide="message-square" style="width: 0.85rem; height: 0.85rem; vertical-align: text-bottom; margin-right: 0.25rem;"></i> Retroalimentar
+            </button>
+        `;
+
+        if (item.feedback) {
+            feedbackHTML = `
+                <div style="margin-top: 0.75rem; padding: 0.65rem; background: rgba(16, 185, 129, 0.05); border-left: 3px solid #10b981; border-radius: 4px; font-size: 0.85rem;">
+                    <strong style="color: #34d399; display: block; margin-bottom: 0.25rem;">Tu Retroalimentación:</strong>
+                    <p style="margin: 0; color: var(--text-secondary); font-style: italic;">"${item.feedback}"</p>
+                </div>
+            `;
+            actionBtnHTML = `
+                <button class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="openClinicalCommentModal('${item.id}', '${item.feedback.replace(/'/g, "\\'")}')">
+                    <i data-lucide="edit-3" style="width: 0.85rem; height: 0.85rem; vertical-align: text-bottom; margin-right: 0.25rem;"></i> Editar Comentario
+                </button>
+            `;
+        }
+
+        itemDiv.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">${formatDateTimeString(item.date)}</span>
+                <span class="record-intensity-badge ${intensityClass}" style="font-size: 0.75rem; padding: 0.15rem 0.4rem;">Intensidad: ${item.intensity}%</span>
+            </div>
+            <div style="margin-bottom: 0.5rem;">
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 0.25rem;">Pensamiento Automático:</span>
+                <p style="margin: 0; font-size: 0.85rem; font-style: italic; color: var(--text-secondary);">"${item.thought}"</p>
+            </div>
+            <div style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Emociones:</span>
+                <div>${emotionsChips}</div>
+            </div>
+            <div style="margin-bottom: 0.75rem;">
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 0.25rem;">Conducta:</span>
+                <p style="margin: 0; font-size: 0.85rem; color: var(--text-secondary);">${item.conduct}</p>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 0.75rem;">
+                ${actionBtnHTML}
+            </div>
+            ${feedbackHTML}
+        `;
+        container.appendChild(itemDiv);
+    });
+
+    lucide.createIcons();
 }

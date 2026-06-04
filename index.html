@@ -82,6 +82,15 @@
                             </div>
                         </div>
                         
+                        <!-- Daily Checklist Widget -->
+                        <div class="card daily-checklist-card">
+                            <h3><i data-lucide="list-todo" class="header-icon text-indigo"></i> Hábitos Diarios</h3>
+                            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: -0.25rem; margin-bottom: 0.75rem;">Rutina de bienestar sugerida para el día de hoy.</p>
+                            <div class="daily-checklist-items" id="daily-checklist-container">
+                                <!-- Checkbox items dynamically populated by JS -->
+                            </div>
+                        </div>
+                        
                         <!-- Mini Checklist: Pending Tasks -->
                         <div class="card mini-tasks-card">
                             <h3><i data-lucide="check-square" class="header-icon"></i> Tareas Pendientes</h3>
@@ -352,6 +361,20 @@
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Registros desde la última sesión -->
+                <div class="card margin-top-md" id="emily-recent-registries-card">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
+                        <div>
+                            <h3 style="margin: 0;"><i data-lucide="folder-heart" class="header-icon text-teal"></i> Registros desde la Última Sesión</h3>
+                            <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0.25rem 0 0 0;">Autorregistros creados por Paul desde la fecha de la última consulta.</p>
+                        </div>
+                        <span id="emily-recent-registries-badge" class="task-status-badge completed" style="background: rgba(16, 185, 129, 0.15); color: #34d399; font-weight: 600; padding: 0.35rem 0.65rem;">0 nuevos</span>
+                    </div>
+                    <div class="recent-registries-feed" id="emily-recent-registries-container" style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
+                        <!-- Creados dinámicamente por JS -->
                     </div>
                 </div>
             </section>
