@@ -241,7 +241,7 @@
                         <!-- Daily Activities Checklist -->
                         <div class="card daily-activities-card">
                             <h3><i data-lucide="list-todo" class="header-icon text-indigo"></i> Actividades del Día</h3>
-                            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem;">Completa las actividades asignadas para tu bienestar diario.</p>
+                            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem;">Registra y completa las actividades asignadas para el bienestar del niño/a hoy.</p>
                             <div class="daily-checklist-items" id="family-activities-container">
                                 <!-- Checkbox items dynamically populated by JS -->
                             </div>
@@ -290,7 +290,7 @@
                         <!-- CHILD VIEW: EMOJIS & SIMPLE QUESTIONS -->
                         <div id="child-record-fields" style="display: none;">
                             <div class="form-group">
-                                <label><i data-lucide="smile"></i> ¿Cómo se sentía el niño/a hoy? (Pídele que elija)</label>
+                                <label><i data-lucide="smile"></i> ¿Cómo se sintió tu hijo/a hoy? (Elige una emoción)</label>
                                 <div class="child-emojis-selector">
                                     <button type="button" class="emoji-selector-btn" onclick="selectChildEmotion('Alegría', '😃', this)">
                                         <span class="emoji-large">😃</span>
@@ -321,23 +321,23 @@
                             </div>
 
                             <div class="form-group">
-                                <label for="child-intensity"><i data-lucide="flame"></i> ¿Con qué intensidad experimentó la emoción?</label>
+                                <label for="child-intensity"><i data-lucide="flame"></i> ¿Con qué nivel de intensidad experimentó esta emoción?</label>
                                 <div class="child-intensity-rating">
-                                    <button type="button" class="child-rating-star" onclick="setChildIntensity(20, this)">Un poquito 🤏</button>
-                                    <button type="button" class="child-rating-star active" onclick="setChildIntensity(50, this)">Medio 😐</button>
-                                    <button type="button" class="child-rating-star" onclick="setChildIntensity(100, this)">¡Muchísimo! 🚀</button>
+                                    <button type="button" class="child-rating-star" onclick="setChildIntensity(20, this)">Leve 🤏</button>
+                                    <button type="button" class="child-rating-star active" onclick="setChildIntensity(50, this)">Moderada 😐</button>
+                                    <button type="button" class="child-rating-star" onclick="setChildIntensity(100, this)">Elevada 🚀</button>
                                 </div>
                                 <input type="hidden" id="child-intensity-value" value="50">
                             </div>
 
                             <div class="form-group">
-                                <label for="child-thought"><i data-lucide="help-circle"></i> ¿Qué situación o detonante causó esta emoción?</label>
-                                <textarea id="child-thought" rows="3" placeholder="Ej: No quería hacer la tarea de matemáticas..." required></textarea>
+                                <label for="child-thought"><i data-lucide="help-circle"></i> Detonante: ¿Qué situación o motivo causó esta emoción en tu hijo/a?</label>
+                                <textarea id="child-thought" rows="3" placeholder="Ej: Se molestó al no poder realizar la tarea de matemáticas o tuvo una discusión..." required></textarea>
                             </div>
 
                             <div class="form-group">
-                                <label for="child-conduct"><i data-lucide="footprints"></i> ¿Qué conducta o reacción tuvo el niño/a?</label>
-                                <textarea id="child-conduct" rows="3" placeholder="Ej: Lloró, tiró los lápices y se encerró en su cuarto..." required></textarea>
+                                <label for="child-conduct"><i data-lucide="footprints"></i> Conducta: ¿Cómo reaccionó o qué hizo el niño/a?</label>
+                                <textarea id="child-conduct" rows="3" placeholder="Ej: Lloró, tiró los lápices y buscó consuelo, o se calmó tras respirar..." required></textarea>
                             </div>
                         </div>
 

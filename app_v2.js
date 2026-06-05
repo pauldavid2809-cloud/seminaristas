@@ -1007,19 +1007,35 @@ function renderFamilyDashboard() {
     // Welcoming
     const welcome = document.getElementById("family-welcome-card");
     if (welcome) {
-        welcome.innerHTML = `
-            <div class="card-glow"></div>
-            <h2>¡Hola, ${state.currentPatient.name}!</h2>
-            <p>Tu bienestar emocional es muy importante. Aquí puedes realizar tus registros diarios y ver los videos y tareas que comparte tu psicóloga.</p>
-            <div class="quick-actions">
-                <button class="btn btn-primary" onclick="navigateToTab('family-new-record')">
-                    <i data-lucide="plus-circle"></i> Registrar Estado de Hoy
-                </button>
-                <button class="btn btn-secondary" onclick="logout()" style="background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.2); color: #f87171;">
-                    <i data-lucide="log-out"></i> Salir del Portal
-                </button>
-            </div>
-        `;
+        if (state.currentPatient.category === 'child') {
+            welcome.innerHTML = `
+                <div class="card-glow"></div>
+                <h2>¡Hola, Familia de ${state.currentPatient.name}!</h2>
+                <p>Aquí pueden registrar el bienestar de su hijo/a, completar sus actividades diarias y revisar los videos o tareas asignadas por la psicóloga.</p>
+                <div class="quick-actions">
+                    <button class="btn btn-primary" onclick="navigateToTab('family-new-record')">
+                        <i data-lucide="plus-circle"></i> Registrar Estado de Hoy
+                    </button>
+                    <button class="btn btn-secondary" onclick="logout()" style="background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.2); color: #f87171;">
+                        <i data-lucide="log-out"></i> Salir del Portal
+                    </button>
+                </div>
+            `;
+        } else {
+            welcome.innerHTML = `
+                <div class="card-glow"></div>
+                <h2>¡Hola, ${state.currentPatient.name}!</h2>
+                <p>Tu bienestar emocional es muy importante. Aquí puedes realizar tus registros diarios y ver los videos y tareas que comparte tu psicóloga.</p>
+                <div class="quick-actions">
+                    <button class="btn btn-primary" onclick="navigateToTab('family-new-record')">
+                        <i data-lucide="plus-circle"></i> Registrar Estado de Hoy
+                    </button>
+                    <button class="btn btn-secondary" onclick="logout()" style="background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.2); color: #f87171;">
+                        <i data-lucide="log-out"></i> Salir del Portal
+                    </button>
+                </div>
+            `;
+        }
     }
 
     // Stats
@@ -1161,7 +1177,7 @@ function setupNewRecordForm() {
     if (state.currentPatient.category === 'child') {
         childFields.style.display = "block";
         adolescentFields.style.display = "none";
-        desc.innerText = "Registra cómo se ha sentido el niño/a hoy. Puedes pedirle que elija el emoji correspondiente.";
+        desc.innerText = "Registra cómo se ha sentido tu hijo/a hoy. Puedes pedirle que elija el emoji correspondiente.";
     } else {
         childFields.style.display = "none";
         adolescentFields.style.display = "block";
@@ -1199,7 +1215,7 @@ async function saveSelfRecord(e) {
 
     if (state.currentPatient.category === 'child') {
         if (!childSelectedEmotion) {
-            alert("Por favor selecciona cómo te sientes hoy (elige un emoji).");
+            alert("Por favor selecciona cómo se sintió tu hijo/a hoy (elige un emoji).");
             return;
         }
         emotions = [childSelectedEmotion];
