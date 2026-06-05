@@ -1397,6 +1397,13 @@ function exportFamilyCSV() {
 
 // --- FAMILY TASKS & YOUTUBE PLAYER EMBEDS ---
 
+function getYouTubeVideoId(url) {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+}
+
 function renderFamilyTasks() {
     const container = document.getElementById("family-tasks-container");
     if (!container) return;
@@ -1424,11 +1431,19 @@ function renderFamilyTasks() {
         let submission = "";
 
         if (!task.completed) {
-            actionBtn = `
-                <button class="btn btn-primary" onclick="openTaskReplyModal('${task.id}', '${task.title.replace(/'/g, "\\'")}')">
-                    <i data-lucide="file-up"></i> Entregar Actividad
-                </button>
-            `;
+            if (task.type === 'video') {
+                actionBtn = `
+                    <button class="btn btn-secondary btn-full-width" id="btn-submit-task-${task.id}" disabled style="opacity: 0.65; cursor: not-allowed; border-color: rgba(125,125,125,0.15);">
+                        <i data-lucide="lock"></i> Mira el video completo para desbloquear entrega
+                    </button>
+                `;
+            } else {
+                actionBtn = `
+                    <button class="btn btn-primary" onclick="openTaskReplyModal('${task.id}', '${task.title.replace(/'/g, "\\'")}', false)">
+                        <i data-lucide="file-up"></i> Entregar Actividad
+                    </button>
+                `;
+            }
         } else {
             let fileHTML = "";
             if (task.file) {
@@ -1454,13 +1469,21 @@ function renderFamilyTasks() {
 
         let youtubeHTML = "";
         if (task.type === 'video' && task.youtube_url) {
-            const embedUrl = getYouTubeEmbedUrl(task.youtube_url);
-            if (embedUrl) {
-                youtubeHTML = `
-                    <div class="youtube-player-container" style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
-                        <iframe src="${embedUrl}" allowfullscreen></iframe>
-                    </div>
-                `;
+            const videoId = getYouTubeVideoId(task.youtube_url);
+            if (videoId) {
+                if (task.completed) {
+                    youtubeHTML = `
+                        <div class="youtube-player-container" style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
+                            <iframe src="https://www.youtube.com/embed/${videoId}" allowfullscreen></iframe>
+                        </div>
+                    `;
+                } else {
+                    youtubeHTML = `
+                        <div class="youtube-player-container" style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
+                            <div id="yt-player-${task.id}" class="yt-player-placeholder" data-video-id="${videoId}" data-task-id="${task.id}"></div>
+                        </div>
+                    `;
+                }
             }
         }
 
@@ -1485,6 +1508,7 @@ function renderFamilyTasks() {
     });
 
     lucide.createIcons();
+    initializeYouTubePlayers();
 }
 
 function getYouTubeEmbedUrl(url) {
@@ -1499,8 +1523,9 @@ function getYouTubeEmbedUrl(url) {
 }
 
 // Reply Modal
-function openTaskReplyModal(id, title) {
+function openTaskReplyModal(id, title, isVideo = false) {
     document.getElementById("reply-task-id").value = id;
+    document.getElementById("reply-is-video").value = isVideo ? "true" : "false";
     document.getElementById("reply-task-title").innerHTML = `Actividad: <strong>${title}</strong>`;
     document.getElementById("modal-task-reply").classList.add("active");
     removeSelectedFile();
@@ -1574,11 +1599,14 @@ async function saveTaskReply(e) {
             };
         }
 
+        const isVideo = document.getElementById("reply-is-video").value === "true";
+        const finalReply = isVideo ? `[Video 100% Visto] ${replyVal}` : replyVal;
+
         const { error } = await supabaseClient
             .from('tasks')
             .update({
                 completed: true,
-                reply: replyVal,
+                reply: finalReply,
                 completed_date: new Date().toISOString(),
                 file_url: fileMetadata ? fileMetadata.path : null,
                 file_name: fileMetadata ? fileMetadata.originalName : null,
@@ -1986,3 +2014,64 @@ window.removeSelectedFile = removeSelectedFile;
 window.saveTaskReply = saveTaskReply;
 window.saveParentReport = saveParentReport;
 window.logout = logout;
+
+// YouTube Iframe API Integration
+if (!window.YT) {
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    if (firstScriptTag && firstScriptTag.parentNode) {
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    } else {
+        document.head.appendChild(tag);
+    }
+}
+
+// Global Callback for YouTube API
+window.onYouTubeIframeAPIReady = function() {
+    initializeYouTubePlayers();
+};
+
+function initializeYouTubePlayers() {
+    if (typeof YT === 'undefined' || !YT.Player) return;
+    
+    document.querySelectorAll('.yt-player-placeholder').forEach(el => {
+        const taskId = el.getAttribute('data-task-id');
+        const videoId = el.getAttribute('data-video-id');
+        
+        if (el.tagName.toLowerCase() === 'iframe') return;
+
+        new YT.Player(el.id, {
+            videoId: videoId,
+            playerVars: {
+                'enablejsapi': 1,
+                'origin': window.location.origin,
+                'rel': 0,
+                'modestbranding': 1
+            },
+            events: {
+                'onStateChange': (event) => onPlayerStateChange(event, taskId)
+            }
+        });
+    });
+}
+
+function onPlayerStateChange(event, taskId) {
+    if (event.data === 0) { // YT.PlayerState.ENDED
+        const btn = document.getElementById(`btn-submit-task-${taskId}`);
+        if (btn) {
+            btn.disabled = false;
+            btn.className = "btn btn-primary btn-full-width";
+            btn.style.opacity = "1";
+            btn.style.cursor = "pointer";
+            btn.style.borderColor = "";
+            
+            const task = state.tasks.find(t => t.id === taskId);
+            const titleEscaped = task ? task.title.replace(/'/g, "\\'") : "";
+            
+            btn.innerHTML = `<i data-lucide="check-circle-2"></i> ¡Video Visto! Entregar Actividad`;
+            btn.onclick = () => openTaskReplyModal(taskId, titleEscaped, true);
+            lucide.createIcons();
+        }
+    }
+}
