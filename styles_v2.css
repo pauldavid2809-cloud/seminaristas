@@ -63,8 +63,8 @@ body.theme-auth {
 /* 1.2 CLINICAL/THERAPIST THEME (Daniela) */
 body.theme-therapist {
     --bg-app: #f8fafc;
-    --bg-card: rgba(255, 255, 255, 0.75);
-    --bg-card-hover: rgba(255, 255, 255, 0.9);
+    --bg-card: #ffffff;
+    --bg-card-hover: #ffffff;
     --border-color: rgba(13, 148, 136, 0.08);
     --border-hover: rgba(13, 148, 136, 0.18);
     --text-primary: #0f172a;
@@ -88,7 +88,7 @@ body.theme-child {
     --font-heading: 'Fredoka', sans-serif;
     --font-body: 'Fredoka', sans-serif;
     --bg-app: #fefaf0; /* Warm milky cream */
-    --bg-card: rgba(255, 255, 255, 0.95);
+    --bg-card: #ffffff;
     --bg-card-hover: #ffffff;
     --border-color: rgba(251, 140, 0, 0.1);
     --border-hover: rgba(251, 140, 0, 0.25);
@@ -115,8 +115,8 @@ body.theme-child {
 /* 1.4 ADOLESCENT PATIENT PORTAL THEME */
 body.theme-adolescent {
     --bg-app: #fafaff;
-    --bg-card: rgba(255, 255, 255, 0.85);
-    --bg-card-hover: rgba(255, 255, 255, 0.96);
+    --bg-card: #ffffff;
+    --bg-card-hover: #ffffff;
     --border-color: rgba(99, 102, 241, 0.08);
     --border-hover: rgba(99, 102, 241, 0.18);
     --text-primary: #1e1b4b; /* Royal Indigo */
@@ -207,7 +207,8 @@ a {
 .bg-glow {
     position: absolute;
     border-radius: 50%;
-    filter: blur(140px);
+    filter: blur(80px);
+    will-change: transform;
     transition: background-color var(--transition-slow), transform var(--transition-slow);
     animation: floatGlow 25s infinite alternate ease-in-out;
 }
@@ -287,18 +288,19 @@ body.theme-adolescent .bg-glow-3 { background-color: rgba(16, 185, 129, 0.05); }
     border: 1px solid var(--border-color);
     box-shadow: var(--shadow-lg);
     backdrop-filter: blur(20px);
+    will-change: transform, opacity;
     transition: transform var(--transition-slow), border-color var(--transition-fast), box-shadow var(--transition-fast);
-    animation: authCardEntrance 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: authCardEntrance 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes authCardEntrance {
     from {
         opacity: 0;
-        transform: translateY(40px) rotateX(10deg);
+        transform: translateY(24px) scale(0.98);
     }
     to {
         opacity: 1;
-        transform: translateY(0) rotateX(0deg);
+        transform: translateY(0) scale(1);
     }
 }
 
@@ -440,7 +442,6 @@ body.theme-adolescent .bg-glow-3 { background-color: rgba(16, 185, 129, 0.05); }
     position: relative;
     overflow: hidden;
     box-shadow: var(--shadow-sm);
-    backdrop-filter: blur(12px);
     transition: all var(--transition-normal);
 }
 
@@ -816,6 +817,7 @@ body.theme-therapist .current-role-badge {
 
 .content-section {
     display: none;
+    will-change: transform, opacity;
 }
 
 .content-section.active {
