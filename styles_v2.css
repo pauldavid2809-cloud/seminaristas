@@ -1066,7 +1066,7 @@ body.theme-therapist .current-role-badge {
     font-size: 0.9rem;
 }
 
-.thought-box, .conduct-box, .clinical-notes-box {
+.situation-box, .thought-box, .conduct-box, .clinical-notes-box {
     background: rgba(125, 125, 125, 0.03);
     padding: var(--spacing-xs) var(--spacing-sm);
     border-radius: var(--radius-sm);
@@ -1378,11 +1378,28 @@ body.theme-child .daily-habit-item input[type="checkbox"]:checked {
 
 /* 8.2 ADOLESCENT THEME STYLES (theme-adolescent) */
 
+/* Spacing for adolescent record fields container */
+#adolescent-record-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
 /* Emotion checklist grid */
 .emotions-selector-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
-    gap: var(--spacing-xs);
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+/* Hide native checkboxes so only the custom chips are visible */
+.emotions-selector-grid input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
 }
 
 .emotion-chip {
@@ -1390,14 +1407,18 @@ body.theme-child .daily-habit-item input[type="checkbox"]:checked {
     align-items: center;
     justify-content: center;
     width: 100%;
-    padding: 0.55rem 0.5rem;
+    padding: 0.65rem 0.75rem;
     background: rgba(125, 125, 125, 0.03);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     font-weight: 700;
     color: var(--text-secondary);
     transition: all var(--transition-fast);
+}
+
+.emotion-checkbox-label {
+    cursor: pointer;
 }
 
 .emotion-checkbox-label:hover .emotion-chip {

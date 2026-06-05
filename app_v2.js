@@ -594,6 +594,16 @@ function renderTherapistPatientSubFeeds(records, tasks, activities) {
                     `;
                 }
 
+                let situationHTML = "";
+                if (item.situation) {
+                    situationHTML = `
+                        <div class="situation-box">
+                            <span class="box-title"><i data-lucide="map-pin"></i> Situación</span>
+                            <p class="thought-text">"${item.situation}"</p>
+                        </div>
+                    `;
+                }
+
                 card.innerHTML = `
                     <div class="record-card-header">
                         <div class="record-type-date">
@@ -603,6 +613,7 @@ function renderTherapistPatientSubFeeds(records, tasks, activities) {
                         <span class="record-intensity-badge">Intensidad: ${item.intensity}%</span>
                     </div>
                     <div class="record-card-body">
+                        ${situationHTML}
                         <div class="thought-box">
                             <span class="box-title"><i data-lucide="brain"></i> Detonante / Pensamiento</span>
                             <p class="thought-text">"${item.thought_or_trigger}"</p>
@@ -1212,6 +1223,7 @@ async function saveSelfRecord(e) {
     let intensity = 50;
     let thought = "";
     let conduct = "";
+    let situation = null;
 
     if (state.currentPatient.category === 'child') {
         if (!childSelectedEmotion) {
@@ -1239,6 +1251,7 @@ async function saveSelfRecord(e) {
         intensity = parseInt(document.getElementById("record-intensity").value);
         thought = document.getElementById("record-thought").value.trim();
         conduct = document.getElementById("record-conduct").value.trim();
+        situation = document.getElementById("record-situation").value.trim();
     }
 
     const newRecord = {
@@ -1249,7 +1262,8 @@ async function saveSelfRecord(e) {
         thought_or_trigger: thought,
         emotions: emotions,
         intensity: intensity,
-        conduct: conduct
+        conduct: conduct,
+        situation: situation
     };
 
     try {
@@ -1309,6 +1323,16 @@ function renderFamilyHistory(filtered = null) {
                 `;
             }
 
+            let situationHTML = "";
+            if (item.situation) {
+                situationHTML = `
+                    <div class="situation-box">
+                        <span class="box-title"><i data-lucide="map-pin"></i> Situación</span>
+                        <p class="thought-text">"${item.situation}"</p>
+                    </div>
+                `;
+            }
+
             card.innerHTML = `
                 <div class="record-card-header">
                     <div class="record-type-date">
@@ -1318,6 +1342,7 @@ function renderFamilyHistory(filtered = null) {
                     <span class="record-intensity-badge">Intensidad: ${item.intensity}%</span>
                 </div>
                 <div class="record-card-body">
+                    ${situationHTML}
                     <div class="thought-box">
                         <span class="box-title"><i data-lucide="brain"></i> Detonante / Qué pensó</span>
                         <p class="thought-text">"${item.thought_or_trigger}"</p>
