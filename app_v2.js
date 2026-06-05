@@ -1717,8 +1717,29 @@ function renderChart(canvasId, role, customRecords = null) {
         }
     });
 
-    const activeColor = role === 'paul' ? (state.currentPatient.category === 'child' ? '#fb8c00' : '#8b5cf6') : '#0d9488';
-    const accentColor = '#ff4d4d';
+    const activeColor = role === 'paul' ? (state.currentPatient.category === 'child' ? '#fb8c00' : '#6366f1') : '#0d9488';
+    const accentColor = '#f43f5e';
+
+    const ctx = canvas.getContext('2d');
+    
+    // Create modern gradient area fill under the line
+    let activeGradient = 'rgba(0, 0, 0, 0)';
+    if (ctx) {
+        const gradient = ctx.createLinearGradient(0, 0, 0, 240);
+        if (role === 'paul') {
+            if (state.currentPatient.category === 'child') {
+                gradient.addColorStop(0, 'rgba(251, 140, 0, 0.22)');
+                gradient.addColorStop(1, 'rgba(251, 140, 0, 0.00)');
+            } else {
+                gradient.addColorStop(0, 'rgba(99, 102, 241, 0.22)');
+                gradient.addColorStop(1, 'rgba(99, 102, 241, 0.00)');
+            }
+        } else {
+            gradient.addColorStop(0, 'rgba(13, 148, 136, 0.22)');
+            gradient.addColorStop(1, 'rgba(13, 148, 136, 0.00)');
+        }
+        activeGradient = gradient;
+    }
 
     const config = {
         type: 'line',
@@ -1729,11 +1750,15 @@ function renderChart(canvasId, role, customRecords = null) {
                     label: 'Intensidad / Bienestar',
                     data: intensityData,
                     borderColor: activeColor,
-                    backgroundColor: 'rgba(0,0,0,0.02)',
-                    borderWidth: 3,
-                    tension: 0.35,
+                    backgroundColor: activeGradient,
+                    fill: true,
+                    borderWidth: 3.5,
+                    tension: 0.4, // smooth bezier curves
                     pointBackgroundColor: activeColor,
-                    pointRadius: 4,
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4.5,
+                    pointHoverRadius: 7.5,
                     spanGaps: true
                 },
                 {
@@ -1743,6 +1768,7 @@ function renderChart(canvasId, role, customRecords = null) {
                     backgroundColor: accentColor,
                     pointStyle: 'rectRot',
                     pointRadius: 8,
+                    pointHoverRadius: 10,
                     showLine: false
                 }
             ]
@@ -1751,21 +1777,74 @@ function renderChart(canvasId, role, customRecords = null) {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { display: false }
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    titleFont: {
+                        family: 'Plus Jakarta Sans',
+                        size: 13,
+                        weight: '700'
+                    },
+                    bodyFont: {
+                        family: 'Plus Jakarta Sans',
+                        size: 12
+                    },
+                    padding: 12,
+                    cornerRadius: 10,
+                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                    borderWidth: 1,
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            if (context.datasetIndex === 0) {
+                                return ` Bienestar: ${context.parsed.y}%`;
+                            } else {
+                                const notes = context.raw.notes || "Consulta sin notas registradas";
+                                return ` Consulta: ${notes}`;
+                            }
+                        }
+                    }
+                }
             },
             scales: {
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    border: {
+                        display: false
+                    },
+                    ticks: {
+                        font: {
+                            family: role === 'paul' && state.currentPatient.category === 'child' ? 'Fredoka' : 'Plus Jakarta Sans',
+                            weight: '600'
+                        },
+                        color: 'rgba(125, 125, 125, 0.5)'
+                    }
+                },
                 y: {
                     min: 0,
                     max: 100,
+                    grid: {
+                        color: 'rgba(125, 125, 125, 0.05)',
+                        drawBorder: false
+                    },
+                    border: {
+                        display: false
+                    },
                     ticks: {
-                        callback: val => val + "%"
+                        callback: val => val + "%",
+                        font: {
+                            family: role === 'paul' && state.currentPatient.category === 'child' ? 'Fredoka' : 'Plus Jakarta Sans',
+                            weight: '600'
+                        },
+                        color: 'rgba(125, 125, 125, 0.5)'
                     }
                 }
             }
         }
     };
 
-    const ctx = canvas.getContext('2d');
     const newChart = new Chart(ctx, config);
 
     if (role === 'paul') {
@@ -1824,7 +1903,53 @@ function getEmotionEmoji(emotion) {
     return map[emotion] || '⭐';
 }
 
+async function deleteCurrentPatient() {
+    if (!state.selectedPatientId) return;
+    
+    const patient = state.patients.find(p => p.id === state.selectedPatientId);
+    if (!patient) return;
+    
+    const confirmed = confirm(`¿Estás segura de que deseas eliminar al paciente ${patient.name}?\nEsta acción es permanente y borrará todos sus registros, tareas y reportes de padres.`);
+    if (!confirmed) return;
+    
+    try {
+        // Delete daily activities
+        await supabaseClient
+            .from('daily_activities')
+            .delete()
+            .eq('patient_id', state.selectedPatientId);
+            
+        // Delete tasks
+        await supabaseClient
+            .from('tasks')
+            .delete()
+            .eq('patient_id', state.selectedPatientId);
+            
+        // Delete records (emotional logs and consultations)
+        await supabaseClient
+            .from('records')
+            .delete()
+            .eq('patient_id', state.selectedPatientId);
+            
+        // Delete patient
+        const { error } = await supabaseClient
+            .from('patients')
+            .delete()
+            .eq('id', state.selectedPatientId);
+            
+        if (error) throw error;
+        
+        alert("Paciente eliminado correctamente.");
+        state.selectedPatientId = null;
+        navigateToTab('therapist-patients');
+    } catch (err) {
+        console.error("Error al eliminar paciente:", err);
+        alert("Ocurrió un error al intentar eliminar al paciente.");
+    }
+}
+
 // Window functions
+window.deleteCurrentPatient = deleteCurrentPatient;
 window.switchAuthTab = switchAuthTab;
 window.handleFamilyLogin = handleFamilyLogin;
 window.handleTherapistLogin = handleTherapistLogin;

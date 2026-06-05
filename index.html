@@ -3,274 +3,473 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MindReg | Autorregistro Emocional</title>
-    <!-- Google Fonts: Inter & Outfit -->
+    <title>MindReg | Portal Clínico Infantil y Juvenil</title>
+    <!-- Google Fonts: Plus Jakarta Sans, Fredoka & Quicksand -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles_v2.css">
 </head>
-<body class="theme-dark">
-    <!-- Main App Container -->
-    <div class="app-container">
+<body class="theme-auth">
+    <!-- Animated background glows -->
+    <div class="bg-glows">
+        <div class="bg-glow bg-glow-1"></div>
+        <div class="bg-glow bg-glow-2"></div>
+        <div class="bg-glow bg-glow-3"></div>
+    </div>
+    <!-- Auth Screen (Initially Visible) -->
+    <div class="auth-wrapper" id="auth-screen">
+        <div class="auth-card card">
+            <div class="card-glow"></div>
+            <div class="auth-header">
+                <i data-lucide="brain-circuit" class="auth-logo-icon"></i>
+                <h1>MindReg</h1>
+                <p>Portal de Psicología y Acompañamiento Emocional</p>
+            </div>
+            
+            <div class="auth-tabs">
+                <button class="auth-tab-btn active" id="tab-btn-family" onclick="switchAuthTab('family')">
+                    <i data-lucide="users"></i> Familias
+                </button>
+                <button class="auth-tab-btn" id="tab-btn-therapist" onclick="switchAuthTab('therapist')">
+                    <i data-lucide="shield-check"></i> Psic. Daniela
+                </button>
+            </div>
+            
+            <!-- Family Login Form -->
+            <form id="form-family-login" onsubmit="handleFamilyLogin(event)" class="auth-form active">
+                <p class="auth-form-desc">Ingresa el código de acceso proporcionado por tu terapeuta para ver tus actividades, tareas y videos.</p>
+                <div class="form-group">
+                    <label for="family-code-input"><i data-lucide="key-round"></i> Código de Paciente</label>
+                    <input type="text" id="family-code-input" class="form-control" placeholder="Ej: MATEO2026" required style="text-transform: uppercase;">
+                </div>
+                <div id="family-login-error" class="error-msg" style="display: none;"></div>
+                <button type="submit" class="btn btn-primary btn-full-width margin-top-md">
+                    Ingresar al Portal <i data-lucide="arrow-right" style="vertical-align: text-bottom; margin-left: 0.25rem;"></i>
+                </button>
+            </form>
+            
+            <!-- Therapist Login Form -->
+            <form id="form-therapist-login" onsubmit="handleTherapistLogin(event)" class="auth-form">
+                <p class="auth-form-desc">Ingresa la contraseña para acceder al panel clínico de gestión de pacientes.</p>
+                <div class="form-group">
+                    <label for="therapist-password-input"><i data-lucide="lock"></i> Contraseña Clínica</label>
+                    <input type="password" id="therapist-password-input" class="form-control" placeholder="Escribe tu contraseña..." required>
+                </div>
+                <!-- First login password creation group (hidden by default) -->
+                <div class="form-group margin-top-sm" id="therapist-confirm-group" style="display: none;">
+                    <label for="therapist-confirm-input"><i data-lucide="shield-check"></i> Confirmar Contraseña</label>
+                    <input type="password" id="therapist-confirm-input" class="form-control" placeholder="Repite la contraseña...">
+                </div>
+                <div id="therapist-login-error" class="error-msg" style="display: none;"></div>
+                <button type="submit" id="btn-therapist-submit" class="btn btn-accent btn-full-width margin-top-md">
+                    Ingresar <i data-lucide="arrow-right" style="vertical-align: text-bottom; margin-left: 0.25rem;"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App Container (Hidden until Auth) -->
+    <div class="app-container" id="main-app" style="display: none;">
         
-        <!-- Header / Role Switcher -->
+        <!-- Header -->
         <header class="app-header">
             <div class="header-logo">
                 <i data-lucide="brain" class="logo-icon"></i>
                 <span class="logo-text">MindReg</span>
+                <span class="logo-subtitle" id="app-subtitle">| Portal</span>
             </div>
             
             <div class="session-auth-bar" id="session-auth-bar">
-                <!-- Will be dynamically populated by JS -->
+                <!-- Populated by JS -->
             </div>
         </header>
 
-        <!-- Navigation Tabs (Dynamic depending on active role) -->
+        <!-- Navigation Tabs -->
         <nav class="app-nav">
             <div class="nav-links" id="nav-links-container">
                 <!-- Links dynamically populated by JS -->
             </div>
             <div class="current-role-badge" id="role-badge">
-                <i data-lucide="circle-dot"></i>
-                <span id="role-badge-text">Paciente</span>
+                <!-- Populated by JS -->
             </div>
         </nav>
 
         <!-- Main Content Area -->
         <main class="app-main-content">
             
-            <!-- SECTION 1: PAUL (PATIENT) DASHBOARD -->
-            <section id="section-paul-dashboard" class="content-section active">
-                <div class="section-grid">
-                    
-                    <!-- Left: Quick Info Cards & Consultation Button -->
-                    <div class="col-left">
-                        <div class="welcome-card card">
-                            <div class="card-glow"></div>
-                            <h2>¡Hola, Paul!</h2>
-                            <p>Tu bienestar emocional es lo más importante. Aquí puedes registrar tu estado y ver las indicaciones de la Psic. Emily.</p>
-                            <div class="quick-actions">
-                                <button class="btn btn-primary" onclick="navigateToTab('paul-new-record')">
-                                    <i data-lucide="plus-circle"></i> Nuevo Autorregistro
-                                </button>
+            <!-- SECTION A: THERAPIST DASHBOARD (PATIENTS LIST) -->
+            <section id="section-therapist-patients" class="content-section">
+                <div class="therapist-layout">
+                    <div class="therapist-header">
+                        <div>
+                            <h2>Mis Pacientes en Supervisión</h2>
+                            <p class="section-desc">Gestiona tus pacientes, revisa sus progresos y genera códigos de acceso.</p>
+                        </div>
+                        <button class="btn btn-accent" onclick="openNewPatientModal()">
+                            <i data-lucide="user-plus"></i> Registrar Paciente
+                        </button>
+                    </div>
+
+                    <!-- Patients Grid -->
+                    <div class="patients-grid" id="patients-list-container">
+                        <!-- Dynamic list of patient cards -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION B: THERAPIST PATIENT PROFILE DETAIL -->
+            <section id="section-therapist-patient-detail" class="content-section">
+                <div class="patient-detail-header card">
+                    <button class="btn btn-secondary" onclick="navigateToTab('therapist-patients')" style="background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.2); color: #f87171;">
+                        <i data-lucide="arrow-left"></i> Volver / Salir de Ficha
+                    </button>
+                    <div class="patient-profile-info margin-top-md" id="detail-profile-info">
+                        <!-- Dynamic content -->
+                    </div>
+                </div>
+
+                <div class="detail-grid margin-top-md">
+                    <!-- Left Column: Logs, Reports and Tasks -->
+                    <div class="detail-col-left">
+                        
+                        <!-- Toggle Views -->
+                        <div class="detail-view-tabs card">
+                            <button class="detail-tab active" onclick="switchDetailTab('records')">
+                                <i data-lucide="clipboard-signature"></i> Registros de Emoción
+                            </button>
+                            <button class="detail-tab" onclick="switchDetailTab('parent_reports')">
+                                <i data-lucide="users"></i> Reportes de Padres
+                            </button>
+                            <button class="detail-tab" onclick="switchDetailTab('tasks')">
+                                <i data-lucide="clipboard-list"></i> Tareas y Videos
+                            </button>
+                        </div>
+
+                        <!-- Records Feed Container -->
+                        <div id="detail-records-container" class="detail-sub-section active">
+                            <div class="records-feed" id="detail-records-feed">
+                                <!-- Dynamic records -->
                             </div>
                         </div>
 
-                        <!-- Statistics / Summary widget -->
-                        <div class="stats-grid">
-                            <div class="stat-card card">
-                                <span class="stat-title">Registros este mes</span>
-                                <span class="stat-value" id="paul-stat-count">0</span>
-                            </div>
-                            <div class="stat-card card">
-                                <span class="stat-title">Promedio de Intensidad</span>
-                                <span class="stat-value" id="paul-stat-avg-intensity">0%</span>
+                        <!-- Parent Reports Container -->
+                        <div id="detail-parent-reports-container" class="detail-sub-section">
+                            <div class="records-feed" id="detail-parent-reports-feed">
+                                <!-- Dynamic reports -->
                             </div>
                         </div>
-                        
-                        <!-- Daily Activities Widget -->
-                        <div class="card daily-activities-card">
-                            <h3><i data-lucide="list-todo" class="header-icon text-indigo"></i> Registro de Actividades Diarias</h3>
-                            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: -0.25rem; margin-bottom: 0.75rem;">Registra las actividades o cosas importantes que hiciste durante el día.</p>
-                            
-                            <form id="form-daily-activity" class="form-daily-activity" onsubmit="handleAddDailyActivity(event)">
-                                <input type="text" id="daily-activity-input" class="daily-activity-input" placeholder="Ej: Fui a correr, leí un capítulo..." required>
-                                <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1.25rem; border-radius: var(--radius-sm);">
-                                    <i data-lucide="plus" style="width: 1rem; height: 1rem; vertical-align: text-bottom; margin-right: 0.25rem;"></i> Añadir
-                                </button>
-                            </form>
-                            
-                            <div class="daily-checklist-items" id="daily-activities-container">
-                                <!-- Checkbox items dynamically populated by JS -->
+
+                        <!-- Tasks Feed Container -->
+                        <div id="detail-tasks-container" class="detail-sub-section">
+                            <div class="records-feed" id="detail-tasks-feed">
+                                <!-- Dynamic tasks -->
                             </div>
-                        </div>
-                        
-                        <!-- Mini Checklist: Pending Tasks -->
-                        <div class="card mini-tasks-card">
-                            <h3><i data-lucide="check-square" class="header-icon"></i> Tareas Pendientes</h3>
-                            <div class="task-list-mini" id="paul-mini-tasks-container">
-                                <!-- Dynamic pending tasks list -->
-                            </div>
-                            <button class="btn btn-text text-indigo" onclick="navigateToTab('paul-tasks')">Ver todas las tareas &rarr;</button>
                         </div>
                     </div>
 
-                    <!-- Right: Evolution Graph -->
-                    <div class="col-right">
+                    <!-- Right Column: Charts & Clinical Actions -->
+                    <div class="detail-col-right">
+                        <!-- Individual Patient Chart -->
                         <div class="card chart-card">
-                            <div class="chart-header">
-                                <h3><i data-lucide="trending-up" class="header-icon"></i> Gráfico de Evolución Emocional</h3>
-                                <span class="chart-subtitle">Línea de tiempo de la intensidad y consultas</span>
-                            </div>
+                            <h3><i data-lucide="trending-up" class="header-icon text-teal"></i> Evolución de Paciente</h3>
                             <div class="chart-container">
-                                <canvas id="chart-paul-evolution"></canvas>
+                                <canvas id="chart-therapist-patient-detail"></canvas>
                             </div>
-                            <div class="chart-legend-custom">
-                                <span><span class="legend-dot intensity-dot"></span> Intensidad Emocional (1-100)</span>
-                                <span><span class="legend-dot consultation-dot"></span> Días de Consulta</span>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="card clinic-actions-card margin-top-md">
+                            <h3><i data-lucide="shield-alert" class="header-icon text-teal"></i> Acciones Clínicas</h3>
+                            <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem;">
+                                <button class="btn btn-accent btn-full-width" onclick="openConsultationModal()">
+                                    <i data-lucide="calendar-heart"></i> Registrar Consulta de Hoy
+                                </button>
+                                <button class="btn btn-primary btn-full-width" onclick="openAssignTaskModal()">
+                                    <i data-lucide="plus-circle"></i> Asignar Tarea o Video
+                                </button>
+                                <button class="btn btn-secondary btn-full-width btn-danger-custom" onclick="deleteCurrentPatient()" style="margin-top: 0.25rem; background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.2); color: #f87171;">
+                                    <i data-lucide="user-minus"></i> Dar de Baja / Eliminar
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Daily Activities Checklist for this patient -->
+                        <div class="card daily-activities-card margin-top-md">
+                            <h3><i data-lucide="list-todo" class="header-icon text-teal"></i> Actividades del Paciente</h3>
+                            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem;">Administra el checklist diario del paciente.</p>
+                            <form id="form-therapist-add-activity" onsubmit="handleAddPatientActivity(event)" style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+                                <input type="text" id="therapist-activity-input" class="form-control" placeholder="Ej: Respirar 5 min..." required style="padding: 0.4rem; font-size: 0.85rem;">
+                                <button type="submit" class="btn btn-primary" style="padding: 0.4rem 0.75rem;"><i data-lucide="plus"></i></button>
+                            </form>
+                            <div class="daily-checklist-items" id="therapist-activities-container">
+                                <!-- Dynamic activities list -->
                             </div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- SECTION 2: PAUL NEW REGISTRY FORM -->
-            <section id="section-paul-new-record" class="content-section">
+
+            <!-- SECTION C: FAMILY DASHBOARD (MI PROGRESO) -->
+            <section id="section-family-dashboard" class="content-section">
+                <div class="section-grid">
+                    
+                    <!-- Left: Welcome Card & Quick Stats & Checklist -->
+                    <div class="col-left">
+                        <div class="welcome-card card" id="family-welcome-card">
+                            <!-- Populated dynamically -->
+                        </div>
+
+                        <!-- Statistics -->
+                        <div class="stats-grid">
+                            <div class="stat-card card">
+                                <span class="stat-title">Registros este mes</span>
+                                <span class="stat-value" id="family-stat-count">0</span>
+                            </div>
+                            <div class="stat-card card">
+                                <span class="stat-title" id="family-intensity-title">Intensidad Promedio</span>
+                                <span class="stat-value" id="family-stat-avg-intensity">0%</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Daily Activities Checklist -->
+                        <div class="card daily-activities-card">
+                            <h3><i data-lucide="list-todo" class="header-icon text-indigo"></i> Actividades del Día</h3>
+                            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem;">Completa las actividades asignadas para tu bienestar diario.</p>
+                            <div class="daily-checklist-items" id="family-activities-container">
+                                <!-- Checkbox items dynamically populated by JS -->
+                            </div>
+                        </div>
+                        
+                        <!-- Pending Tasks Widget -->
+                        <div class="card mini-tasks-card">
+                            <h3><i data-lucide="check-square" class="header-icon"></i> Tareas Pendientes</h3>
+                            <div class="task-list-mini" id="family-mini-tasks-container">
+                                <!-- Dynamic list -->
+                            </div>
+                            <button class="btn btn-text text-indigo" onclick="navigateToTab('family-tasks')">Ver todas las tareas &rarr;</button>
+                        </div>
+                    </div>
+
+                    <!-- Right: Graph -->
+                    <div class="col-right">
+                        <div class="card chart-card">
+                            <div class="chart-header">
+                                <h3><i data-lucide="trending-up" class="header-icon"></i> Evolución de Bienestar</h3>
+                                <span class="chart-subtitle">Línea de tiempo de la intensidad y consultas</span>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="chart-family-evolution"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION D: FAMILY NEW RECORD FORM -->
+            <section id="section-family-new-record" class="content-section">
                 <div class="card form-card max-width-md">
                     <div class="form-header">
-                        <h2><i data-lucide="clipboard-signature" class="header-icon text-indigo"></i> Nuevo Autorregistro Emocional</h2>
-                        <p>Completa este registro para analizar lo que experimentaste y cómo actuaste.</p>
+                        <h2><i data-lucide="clipboard-signature" class="header-icon text-indigo"></i> Nuevo Registro Emocional</h2>
+                        <p id="record-form-desc">Completa este registro para contarle a tu psicóloga cómo te has sentido.</p>
                     </div>
                     
                     <form id="form-self-record" onsubmit="saveSelfRecord(event)">
                         <!-- Date Picker -->
                         <div class="form-group">
-                            <label for="record-date"><i data-lucide="calendar"></i> Fecha de la Situación</label>
+                            <label for="record-date"><i data-lucide="calendar"></i> Fecha de hoy</label>
                             <input type="date" id="record-date" required>
                         </div>
 
-                        <!-- Automatic Thought -->
-                        <div class="form-group">
-                            <label for="record-thought"><i data-lucide="brain-circuit"></i> Pensamiento Automático</label>
-                            <span class="label-help">¿Qué estaba cruzando por tu mente en ese momento exacto?</span>
-                            <textarea id="record-thought" rows="3" placeholder="Ej: 'No voy a poder con este proyecto, todos se darán cuenta de que no sé nada...'" required></textarea>
-                        </div>
+                        <!-- CHILD VIEW: EMOJIS & SIMPLE QUESTIONS -->
+                        <div id="child-record-fields" style="display: none;">
+                            <div class="form-group">
+                                <label><i data-lucide="smile"></i> ¿Cómo se sentía el niño/a hoy? (Pídele que elija)</label>
+                                <div class="child-emojis-selector">
+                                    <button type="button" class="emoji-selector-btn" onclick="selectChildEmotion('Alegría', '😃', this)">
+                                        <span class="emoji-large">😃</span>
+                                        <span class="emoji-label">Feliz</span>
+                                    </button>
+                                    <button type="button" class="emoji-selector-btn" onclick="selectChildEmotion('Tristeza', '😢', this)">
+                                        <span class="emoji-large">😢</span>
+                                        <span class="emoji-label">Triste</span>
+                                    </button>
+                                    <button type="button" class="emoji-selector-btn" onclick="selectChildEmotion('Ira', '😡', this)">
+                                        <span class="emoji-large">😡</span>
+                                        <span class="emoji-label">Enojado</span>
+                                    </button>
+                                    <button type="button" class="emoji-selector-btn" onclick="selectChildEmotion('Miedo', '😨', this)">
+                                        <span class="emoji-large">😨</span>
+                                        <span class="emoji-label">Asustado</span>
+                                    </button>
+                                    <button type="button" class="emoji-selector-btn" onclick="selectChildEmotion('Frustración', '😤', this)">
+                                        <span class="emoji-large">😤</span>
+                                        <span class="emoji-label">Frustrado</span>
+                                    </button>
+                                    <button type="button" class="emoji-selector-btn" onclick="selectChildEmotion('Calma', '😌', this)">
+                                        <span class="emoji-large">😌</span>
+                                        <span class="emoji-label">Tranquilo</span>
+                                    </button>
+                                </div>
+                                <input type="hidden" id="child-selected-emotion" required>
+                            </div>
 
-                        <!-- Emotion Select / Tags -->
-                        <div class="form-group">
-                            <label><i data-lucide="heart"></i> Emociones Experimentadas</label>
-                            <span class="label-help">Selecciona una o más emociones que sentiste:</span>
-                            <div class="emotions-selector-grid">
-                                <label class="emotion-checkbox-label">
-                                    <input type="checkbox" name="emotions" value="Ansiedad" class="emotion-checkbox">
-                                    <span class="emotion-chip emo-ansiedad">Ansiedad</span>
-                                </label>
-                                <label class="emotion-checkbox-label">
-                                    <input type="checkbox" name="emotions" value="Tristeza" class="emotion-checkbox">
-                                    <span class="emotion-chip emo-tristeza">Tristeza</span>
-                                </label>
-                                <label class="emotion-checkbox-label">
-                                    <input type="checkbox" name="emotions" value="Ira" class="emotion-checkbox">
-                                    <span class="emotion-chip emo-ira">Ira</span>
-                                </label>
-                                <label class="emotion-checkbox-label">
-                                    <input type="checkbox" name="emotions" value="Frustración" class="emotion-checkbox">
-                                    <span class="emotion-chip emo-frustracion">Frustración</span>
-                                </label>
-                                <label class="emotion-checkbox-label">
-                                    <input type="checkbox" name="emotions" value="Culpa" class="emotion-checkbox">
-                                    <span class="emotion-chip emo-culpa">Culpa</span>
-                                </label>
-                                <label class="emotion-checkbox-label">
-                                    <input type="checkbox" name="emotions" value="Miedo" class="emotion-checkbox">
-                                    <span class="emotion-chip emo-miedo">Miedo</span>
-                                </label>
-                                <label class="emotion-checkbox-label">
-                                    <input type="checkbox" name="emotions" value="Alegría" class="emotion-checkbox">
-                                    <span class="emotion-chip emo-alegria">Alegría</span>
-                                </label>
-                                <label class="emotion-checkbox-label">
-                                    <input type="checkbox" name="emotions" value="Calma" class="emotion-checkbox">
-                                    <span class="emotion-chip emo-calma">Calma</span>
-                                </label>
-                                <label class="emotion-checkbox-label">
-                                    <input type="checkbox" id="checkbox-emotion-other" class="emotion-checkbox" onchange="toggleOtherEmotionInput(this)">
-                                    <span class="emotion-chip emo-otro">Otro</span>
-                                </label>
+                            <div class="form-group">
+                                <label for="child-intensity"><i data-lucide="flame"></i> ¿Con qué intensidad experimentó la emoción?</label>
+                                <div class="child-intensity-rating">
+                                    <button type="button" class="child-rating-star" onclick="setChildIntensity(20, this)">Un poquito 🤏</button>
+                                    <button type="button" class="child-rating-star active" onclick="setChildIntensity(50, this)">Medio 😐</button>
+                                    <button type="button" class="child-rating-star" onclick="setChildIntensity(100, this)">¡Muchísimo! 🚀</button>
+                                </div>
+                                <input type="hidden" id="child-intensity-value" value="50">
                             </div>
-                            <!-- Hidden text field for other emotion -->
-                            <div class="form-group" id="group-other-emotion" style="display: none; margin-top: 0.75rem;">
-                                <label for="record-emotion-other-text" style="font-size: 0.85rem; font-weight: 600;"><i data-lucide="heart-handshake"></i> Escribe otra emoción</label>
-                                <input type="text" id="record-emotion-other-text" class="form-control" placeholder="Ej: Vergüenza, Melancolía, Sorpresa...">
-                            </div>
-                        </div>
 
-                        <!-- Emotion Intensity Slider -->
-                        <div class="form-group">
-                            <div class="slider-label-wrapper">
-                                <label for="record-intensity"><i data-lucide="gauge"></i> Intensidad Emocional</label>
-                                <span class="slider-value" id="intensity-value-display">50%</span>
+                            <div class="form-group">
+                                <label for="child-thought"><i data-lucide="help-circle"></i> ¿Qué situación o detonante causó esta emoción?</label>
+                                <textarea id="child-thought" rows="3" placeholder="Ej: No quería hacer la tarea de matemáticas..." required></textarea>
                             </div>
-                            <input type="range" id="record-intensity" min="1" max="100" value="50" oninput="updateIntensityDisplay(this.value)">
-                            <div class="slider-guides">
-                                <span>Leve (1)</span>
-                                <span>Moderada (50)</span>
-                                <span>Extrema (100)</span>
+
+                            <div class="form-group">
+                                <label for="child-conduct"><i data-lucide="footprints"></i> ¿Qué conducta o reacción tuvo el niño/a?</label>
+                                <textarea id="child-conduct" rows="3" placeholder="Ej: Lloró, tiró los lápices y se encerró en su cuarto..." required></textarea>
                             </div>
                         </div>
 
-                        <!-- Behavior / Conduct -->
-                        <div class="form-group">
-                            <label for="record-conduct"><i data-lucide="activity"></i> Conducta</label>
-                            <span class="label-help">¿Qué hiciste frente a lo que pensaste y sentiste?</span>
-                            <textarea id="record-conduct" rows="3" placeholder="Ej: 'Me encerré en mi cuarto a ver el celular y evité responder los correos del trabajo...'" required></textarea>
+                        <!-- ADOLESCENT VIEW: CLASSIC COGNITIVE-BEHAVIORAL FORM -->
+                        <div id="adolescent-record-fields" style="display: none;">
+                            <!-- Automatic Thought -->
+                            <div class="form-group">
+                                <label for="record-thought"><i data-lucide="brain-circuit"></i> Pensamiento Automático</label>
+                                <span class="label-help">¿Qué estaba cruzando por tu mente en ese momento exacto?</span>
+                                <textarea id="record-thought" rows="3" placeholder="Ej: 'No voy a poder con este proyecto, todos se darán cuenta de que no sé nada...'" required></textarea>
+                            </div>
+
+                            <!-- Emotion Select / Tags -->
+                            <div class="form-group">
+                                <label><i data-lucide="heart"></i> Emociones Experimentadas</label>
+                                <span class="label-help">Selecciona una o más emociones que sentiste:</span>
+                                <div class="emotions-selector-grid">
+                                    <label class="emotion-checkbox-label">
+                                        <input type="checkbox" name="emotions" value="Ansiedad" class="emotion-checkbox">
+                                        <span class="emotion-chip emo-ansiedad">Ansiedad</span>
+                                    </label>
+                                    <label class="emotion-checkbox-label">
+                                        <input type="checkbox" name="emotions" value="Tristeza" class="emotion-checkbox">
+                                        <span class="emotion-chip emo-tristeza">Tristeza</span>
+                                    </label>
+                                    <label class="emotion-checkbox-label">
+                                        <input type="checkbox" name="emotions" value="Ira" class="emotion-checkbox">
+                                        <span class="emotion-chip emo-ira">Ira</span>
+                                    </label>
+                                    <label class="emotion-checkbox-label">
+                                        <input type="checkbox" name="emotions" value="Frustración" class="emotion-checkbox">
+                                        <span class="emotion-chip emo-frustracion">Frustración</span>
+                                    </label>
+                                    <label class="emotion-checkbox-label">
+                                        <input type="checkbox" name="emotions" value="Culpa" class="emotion-checkbox">
+                                        <span class="emotion-chip emo-culpa">Culpa</span>
+                                    </label>
+                                    <label class="emotion-checkbox-label">
+                                        <input type="checkbox" name="emotions" value="Miedo" class="emotion-checkbox">
+                                        <span class="emotion-chip emo-miedo">Miedo</span>
+                                    </label>
+                                    <label class="emotion-checkbox-label">
+                                        <input type="checkbox" name="emotions" value="Alegría" class="emotion-checkbox">
+                                        <span class="emotion-chip emo-alegria">Alegría</span>
+                                    </label>
+                                    <label class="emotion-checkbox-label">
+                                        <input type="checkbox" name="emotions" value="Calma" class="emotion-checkbox">
+                                        <span class="emotion-chip emo-calma">Calma</span>
+                                    </label>
+                                    <label class="emotion-checkbox-label">
+                                        <input type="checkbox" id="checkbox-emotion-other" class="emotion-checkbox" onchange="toggleOtherEmotionInput(this)">
+                                        <span class="emotion-chip emo-otro">Otro</span>
+                                    </label>
+                                </div>
+                                <div class="form-group" id="group-other-emotion" style="display: none; margin-top: 0.75rem;">
+                                    <label for="record-emotion-other-text" style="font-size: 0.85rem; font-weight: 600;"><i data-lucide="heart-handshake"></i> Escribe otra emoción</label>
+                                    <input type="text" id="record-emotion-other-text" class="form-control" placeholder="Ej: Vergüenza, Melancolía...">
+                                </div>
+                            </div>
+
+                            <!-- Emotion Intensity Slider -->
+                            <div class="form-group">
+                                <div class="slider-label-wrapper">
+                                    <label for="record-intensity"><i data-lucide="gauge"></i> Intensidad Emocional</label>
+                                    <span class="slider-value" id="intensity-value-display">50%</span>
+                                </div>
+                                <input type="range" id="record-intensity" min="1" max="100" value="50" oninput="updateIntensityDisplay(this.value)">
+                                <div class="slider-guides">
+                                    <span>Leve (1)</span>
+                                    <span>Moderada (50)</span>
+                                    <span>Extrema (100)</span>
+                                </div>
+                            </div>
+
+                            <!-- Behavior -->
+                            <div class="form-group">
+                                <label for="record-conduct"><i data-lucide="activity"></i> Conducta</label>
+                                <span class="label-help">¿Qué hiciste frente a lo que pensaste y sentiste?</span>
+                                <textarea id="record-conduct" rows="3" placeholder="Ej: 'Me encerré en mi cuarto a ver el celular...'" required></textarea>
+                            </div>
                         </div>
 
                         <!-- Action Buttons -->
                         <div class="form-actions">
-                            <button type="button" class="btn btn-secondary" onclick="navigateToTab('paul-dashboard')">Cancelar</button>
+                            <button type="button" class="btn btn-secondary" onclick="navigateToTab('family-dashboard')">Cancelar</button>
                             <button type="submit" class="btn btn-primary"><i data-lucide="save"></i> Guardar Registro</button>
                         </div>
                     </form>
                 </div>
             </section>
 
-            <!-- SECTION 3: PAUL RECORDS HISTORY -->
-            <section id="section-paul-history" class="content-section">
+            <!-- SECTION E: FAMILY RECORDS HISTORY -->
+            <section id="section-family-history" class="content-section">
                 <div class="history-container">
-                    
                     <!-- Sidebar: Filters -->
                     <div class="history-filters-sidebar card">
                         <h3><i data-lucide="sliders" class="header-icon"></i> Filtros</h3>
                         
                         <div class="filter-group">
-                            <label for="filter-search">Buscar Pensamiento</label>
+                            <label for="filter-search">Buscar palabras clave</label>
                             <div class="input-icon-wrapper">
                                 <i data-lucide="search" class="input-icon"></i>
-                                <input type="text" id="filter-search" placeholder="Buscar palabras clave..." oninput="applyFilters()">
+                                <input type="text" id="filter-search" placeholder="Ej: enojo, llorar..." oninput="applyFamilyFilters()">
                             </div>
                         </div>
 
-                        <div class="filter-group">
+                        <div class="filter-group" id="filter-emotion-group">
                             <label for="filter-emotion">Emoción</label>
-                            <select id="filter-emotion" onchange="applyFilters()">
+                            <select id="filter-emotion" onchange="applyFamilyFilters()">
                                 <option value="">Todas las emociones</option>
                                 <option value="Ansiedad">Ansiedad</option>
                                 <option value="Tristeza">Tristeza</option>
-                                <option value="Ira">Ira</option>
+                                <option value="Ira">Ira/Enojo</option>
                                 <option value="Frustración">Frustración</option>
                                 <option value="Culpa">Culpa</option>
-                                <option value="Miedo">Miedo</option>
-                                <option value="Alegría">Alegría</option>
-                                <option value="Calma">Calma</option>
+                                <option value="Miedo">Miedo/Asustado</option>
+                                <option value="Alegría">Alegría/Feliz</option>
+                                <option value="Calma">Calma/Tranquilo</option>
                             </select>
                         </div>
 
                         <div class="filter-group">
-                            <label for="filter-intensity-min">Intensidad Mínima</label>
-                            <div class="slider-label-wrapper">
-                                <input type="range" id="filter-intensity-min" min="0" max="100" value="0" oninput="this.nextElementSibling.innerText = this.value + '%'; applyFilters()">
-                                <span class="slider-value">0%</span>
-                            </div>
-                        </div>
-
-                        <div class="filter-group">
                             <label for="filter-date-from">Desde</label>
-                            <input type="date" id="filter-date-from" onchange="applyFilters()">
+                            <input type="date" id="filter-date-from" onchange="applyFamilyFilters()">
                         </div>
 
                         <div class="filter-group">
                             <label for="filter-date-to">Hasta</label>
-                            <input type="date" id="filter-date-to" onchange="applyFilters()">
+                            <input type="date" id="filter-date-to" onchange="applyFamilyFilters()">
                         </div>
 
-                        <button class="btn btn-secondary btn-full-width" onclick="resetFilters()">
+                        <button class="btn btn-secondary btn-full-width" onclick="resetFamilyFilters()">
                             <i data-lucide="refresh-cw"></i> Restablecer Filtros
                         </button>
                     </div>
@@ -278,232 +477,100 @@
                     <!-- Main List Area -->
                     <div class="history-list-area">
                         <div class="list-header">
-                            <h2>Historial de Autorregistros</h2>
+                            <h2>Historial de Registros</h2>
                             <div class="list-actions">
-                                <button class="btn btn-secondary" onclick="exportDataCSV()">
+                                <button class="btn btn-secondary" onclick="exportFamilyCSV()">
                                     <i data-lucide="download"></i> Exportar CSV
                                 </button>
                             </div>
                         </div>
 
-                        <div class="records-feed" id="paul-records-feed">
+                        <div class="records-feed" id="family-records-feed">
                             <!-- Dynamic list of records -->
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- SECTION 4: PAUL TASKS VIEW -->
-            <section id="section-paul-tasks" class="content-section">
+            <!-- SECTION F: FAMILY TASKS & YOUTUBE VIDEOS -->
+            <section id="section-family-tasks" class="content-section">
                 <div class="tasks-page-layout">
                     <div class="tasks-header">
-                        <h2>Mis Tareas de Terapia</h2>
-                        <p>Estas son las actividades que la Psic. Emily ha asignado para tu desarrollo personal.</p>
+                        <h2>Tareas y Videos para el Hogar</h2>
+                        <p>Estas son las actividades y videos didácticos que la terapeuta ha compartido contigo.</p>
                     </div>
 
-                    <div class="tasks-grid-list" id="paul-tasks-container">
-                        <!-- Dynamic tasks will be loaded here -->
+                    <div class="tasks-grid-list" id="family-tasks-container">
+                        <!-- Dynamic tasks will load here (including embedded YouTube player for video-type tasks) -->
                     </div>
                 </div>
             </section>
 
-
-            <!-- SECTION 5: EMILY (PSYCHOLOGIST) DASHBOARD -->
-            <section id="section-emily-dashboard" class="content-section">
-                <div class="emily-dashboard-header card">
-                    <div class="psychologist-profile">
-                        <div class="avatar-circle">EM</div>
-                        <div>
-                            <h2>Psic. Emily Mejias</h2>
-                            <p class="role-desc">Psicóloga Clínica • Supervisando a <strong>Paul Urdaneta 🐢</strong></p>
-                        </div>
-                    </div>
+            <!-- SECTION G: PARENT PORTAL (OBSERVACIONES DE LOS PADRES) -->
+            <section id="section-parent-observations" class="content-section">
+                <div class="detail-grid">
                     
-                    <div class="quick-stats-row">
-                        <div class="q-stat">
-                            <span class="q-val" id="emily-stat-records-count">0</span>
-                            <span class="q-lbl">Registros Totales</span>
-                        </div>
-                        <div class="q-stat">
-                            <span class="q-val text-red" id="emily-stat-alert-intensity">0%</span>
-                            <span class="q-lbl">Intensidad Promedio</span>
-                        </div>
-                        <div class="q-stat">
-                            <span class="q-val text-green" id="emily-stat-tasks-done">0/0</span>
-                            <span class="q-lbl">Tareas Completadas</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="section-grid margin-top-md">
-                    <!-- Left: Clinical Evolution Graphic -->
-                    <div class="col-right"> <!-- Use full/right size for graphic -->
-                        <div class="card chart-card">
-                            <div class="chart-header">
-                                <h3><i data-lucide="trending-up" class="header-icon text-teal"></i> Evolución Clínica de Paul</h3>
-                                <span class="chart-subtitle">Registros de intensidad y sesiones marcadas</span>
-                            </div>
-                            <div class="chart-container">
-                                <canvas id="chart-emily-evolution"></canvas>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Right: Patient Info & Summary -->
+                    <!-- Left: Form to record daily observations -->
                     <div class="col-left">
-                        <div class="card info-summary-card">
-                            <h3><i data-lucide="user-check" class="header-icon text-teal"></i> Resumen de Sesiones</h3>
-                            <div class="session-summary-box">
-                                <p><strong>Consultas realizadas:</strong> <span id="emily-consultations-count">0</span></p>
-                                <p><strong>Última consulta:</strong> <span id="emily-last-consultation-date">No registrada</span></p>
+                        <div class="card form-card">
+                            <div class="form-header">
+                                <h2><i data-lucide="heart-handshake" class="header-icon text-indigo"></i> Reporte del Día de los Padres</h2>
+                                <p>Reporta observaciones sobre la conducta, el sueño o incidentes del niño/adolescente para apoyar el análisis de la psicóloga.</p>
                             </div>
                             
-                            <div class="action-card-btn-container">
-                                <button id="btn-log-consultation" class="btn btn-accent btn-full-width" onclick="openConsultationModal()">
-                                    <i data-lucide="calendar-heart"></i> Hoy hubo consulta
-                                </button>
-                                <button class="btn btn-primary btn-full-width margin-top-sm" onclick="navigateToTab('emily-assign-task')">
-                                    <i data-lucide="plus-circle"></i> Asignar Nueva Tarea
-                                </button>
-                                <button class="btn btn-secondary btn-full-width margin-top-sm" onclick="navigateToTab('emily-records')">
-                                    <i data-lucide="eye"></i> Ver Todos los Registros
-                                </button>
-                                <button class="btn btn-text text-teal btn-full-width margin-top-sm" onclick="showChangePasswordModal()">
-                                    <i data-lucide="key"></i> Cambiar Contraseña
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Actividades de Paul (Por Día) -->
-                        <div class="card daily-activities-card margin-top-md">
-                            <h3><i data-lucide="list-todo" class="header-icon text-teal"></i> Actividades de Paul (Por Día)</h3>
-                            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: -0.25rem; margin-bottom: 0.75rem;">Actividades registradas por Paul organizadas por día, desde la última consulta.</p>
-                            <div class="daily-checklist-items" id="emily-activities-container">
-                                <!-- Creadas dinámicamente por JS -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Registros desde la última sesión -->
-                <div class="card margin-top-md" id="emily-recent-registries-card">
-                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
-                        <div>
-                            <h3 style="margin: 0;"><i data-lucide="folder-heart" class="header-icon text-teal"></i> Registros desde la Última Sesión</h3>
-                            <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0.25rem 0 0 0;">Autorregistros creados por Paul desde la fecha de la última consulta.</p>
-                        </div>
-                        <span id="emily-recent-registries-badge" class="task-status-badge completed" style="background: rgba(16, 185, 129, 0.15); color: #34d399; font-weight: 600; padding: 0.35rem 0.65rem;">0 nuevos</span>
-                    </div>
-                    <div class="recent-registries-feed" id="emily-recent-registries-container" style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
-                        <!-- Creados dinámicamente por JS -->
-                    </div>
-                </div>
-            </section>
-
-            <!-- SECTION 6: EMILY RECORDS VIEW (WITH FEEDBACK CONTROLS) -->
-            <section id="section-emily-records" class="content-section">
-                <div class="history-container">
-                    
-                    <!-- Sidebar: Filters (Same structure, filter inputs separated internally for Emily if needed, but we can reuse or link variables) -->
-                    <div class="history-filters-sidebar card">
-                        <h3><i data-lucide="sliders" class="header-icon text-teal"></i> Filtros Clínicos</h3>
-                        
-                        <div class="filter-group">
-                            <label for="emily-filter-search">Buscar en registros</label>
-                            <div class="input-icon-wrapper">
-                                <i data-lucide="search" class="input-icon"></i>
-                                <input type="text" id="emily-filter-search" placeholder="Pensamientos, conductas..." oninput="applyFiltersEmily()">
-                            </div>
-                        </div>
-
-                        <div class="filter-group">
-                            <label for="emily-filter-emotion">Emoción específica</label>
-                            <select id="emily-filter-emotion" onchange="applyFiltersEmily()">
-                                <option value="">Todas las emociones</option>
-                                <option value="Ansiedad">Ansiedad</option>
-                                <option value="Tristeza">Tristeza</option>
-                                <option value="Ira">Ira</option>
-                                <option value="Frustración">Frustración</option>
-                                <option value="Culpa">Culpa</option>
-                                <option value="Miedo">Miedo</option>
-                                <option value="Alegría">Alegría</option>
-                                <option value="Calma">Calma</option>
-                            </select>
-                        </div>
-
-                        <div class="filter-group">
-                            <label for="emily-filter-intensity-min">Intensidad Mínima</label>
-                            <div class="slider-label-wrapper">
-                                <input type="range" id="emily-filter-intensity-min" min="0" max="100" value="0" oninput="this.nextElementSibling.innerText = this.value + '%'; applyFiltersEmily()">
-                                <span class="slider-value">0%</span>
-                            </div>
-                        </div>
-
-                        <div class="filter-group">
-                            <label for="emily-filter-type">Tipo de Entrada</label>
-                            <select id="emily-filter-type" onchange="applyFiltersEmily()">
-                                <option value="all">Todos (Registros y Consultas)</option>
-                                <option value="records">Solo Autorregistros de Paul</option>
-                                <option value="consultations">Solo Consultas Psicológicas</option>
-                            </select>
-                        </div>
-
-                        <button class="btn btn-secondary btn-full-width" onclick="resetFiltersEmily()">
-                            <i data-lucide="refresh-cw"></i> Restablecer Filtros
-                        </button>
-                    </div>
-
-                    <!-- Main List Area -->
-                    <div class="history-list-area">
-                        <div class="list-header">
-                            <h2>Historial Clínico de Paul Urdaneta</h2>
-                            <span class="subtext-header">Supervisión y retroalimentación clínica</span>
-                        </div>
-
-                        <div class="records-feed" id="emily-records-feed">
-                            <!-- Dynamic list of records for clinical view -->
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- SECTION 7: EMILY ASSIGN TASK FORM -->
-            <section id="section-emily-assign-task" class="content-section">
-                <div class="tasks-page-layout">
-                    <div class="tasks-header">
-                        <h2>Gestión de Tareas de Emily</h2>
-                        <p>Asigna nuevos ejercicios y revisa el progreso y las respuestas de Paul.</p>
-                    </div>
-
-                    <div class="emily-tasks-split">
-                        <!-- Create Task Form -->
-                        <div class="card form-card">
-                            <h3><i data-lucide="pencil-line" class="header-icon text-teal"></i> Nueva Tarea para Paul</h3>
-                            <form id="form-assign-task" onsubmit="saveAssignedTask(event)">
+                            <form id="form-parent-report" onsubmit="saveParentReport(event)">
                                 <div class="form-group">
-                                    <label for="task-title"><i data-lucide="bookmark"></i> Título de la Tarea</label>
-                                    <input type="text" id="task-title" placeholder="Ej: Registro de pensamientos alternativos o Reestructuración cognitiva" required>
+                                    <label for="report-date"><i data-lucide="calendar"></i> Fecha del Reporte</label>
+                                    <input type="date" id="report-date" required>
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="task-desc"><i data-lucide="align-left"></i> Instrucciones / Descripción</label>
-                                    <textarea id="task-desc" rows="4" placeholder="Indica detalladamente qué debe hacer Paul..." required></textarea>
+                                    <label><i data-lucide="check-square"></i> Áreas de Observación hoy:</label>
+                                    <div class="parent-checklist-grid">
+                                        <label class="parent-check-label">
+                                            <input type="checkbox" id="check-sleep" value="Sueño irregular/pesadillas">
+                                            <span>💤 Dificultades en el Sueño</span>
+                                        </label>
+                                        <label class="parent-check-label">
+                                            <input type="checkbox" id="check-eating" value="Alimentación irregular">
+                                            <span>🍎 Problemas de Alimentación</span>
+                                        </label>
+                                        <label class="parent-check-label">
+                                            <input type="checkbox" id="check-tantrum" value="Rabieta o berrinche">
+                                            <span>😤 Rabieta / Desborde</span>
+                                        </label>
+                                        <label class="parent-check-label">
+                                            <input type="checkbox" id="check-cooperation" value="Buena cooperación y disposición">
+                                            <span>✨ Buena disposición/Colaborador</span>
+                                        </label>
+                                        <label class="parent-check-label">
+                                            <input type="checkbox" id="check-school" value="Conflicto escolar o tareas">
+                                            <span>🏫 Conflicto con Escuela/Tareas</span>
+                                        </label>
+                                        <label class="parent-check-label">
+                                            <input type="checkbox" id="check-social" value="Aislamiento o conflictos sociales">
+                                            <span>🗣️ Discusiones / Aislamiento</span>
+                                        </label>
+                                    </div>
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="task-due"><i data-lucide="calendar-clock"></i> Fecha Límite de Entrega</label>
-                                    <input type="date" id="task-due" required>
+                                    <label for="report-notes"><i data-lucide="align-left"></i> Notas y Observaciones Detalladas</label>
+                                    <span class="label-help">Describe de forma libre incidentes, conductas, estados de ánimo que notaste o logros del niño.</span>
+                                    <textarea id="report-notes" rows="4" placeholder="Ej: Mateo tuvo dificultades para dormirse y lloró un poco recordando la escuela, pero cooperó mucho con sus deberes y cenó completo..." required></textarea>
                                 </div>
 
-                                <button type="submit" class="btn btn-primary btn-full-width"><i data-lucide="plus"></i> Asignar Tarea</button>
+                                <button type="submit" class="btn btn-primary btn-full-width"><i data-lucide="send"></i> Guardar Reporte del Día</button>
                             </form>
                         </div>
+                    </div>
 
-                        <!-- List of Tasks & Submissions -->
-                        <div class="card list-assigned-tasks-card">
-                            <h3><i data-lucide="list-todo" class="header-icon text-teal"></i> Tareas Asignadas e Historial</h3>
-                            <div class="assigned-tasks-list" id="emily-assigned-tasks-container">
-                                <!-- Dynamic assigned tasks with replies -->
+                    <!-- Right: History of parent reports -->
+                    <div class="col-right">
+                        <div class="card parent-report-history-card">
+                            <h3><i data-lucide="history" class="header-icon"></i> Historial de Reportes de Padres</h3>
+                            <div class="parent-reports-timeline" id="parent-reports-container">
+                                <!-- Dynamic list -->
                             </div>
                         </div>
                     </div>
@@ -513,25 +580,129 @@
         </main>
     </div>
 
-    <!-- MODAL 1: CONSULTATION REGISTER -->
+    <!-- MODAL 1: REGISTER NEW PATIENT (THERAPIST) -->
+    <div id="modal-new-patient" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i data-lucide="user-plus" class="text-accent"></i> Registrar Nuevo Paciente</h3>
+                <button class="modal-close" onclick="closeNewPatientModal()">&times;</button>
+            </div>
+            <form id="form-new-patient" onsubmit="saveNewPatient(event)">
+                <div class="modal-body">
+                    <p class="modal-desc">Agrega a un nuevo niño o adolescente al panel. Se generará un código único para que la familia acceda al portal.</p>
+                    
+                    <div class="form-group">
+                        <label for="patient-name"><i data-lucide="user"></i> Nombre del Paciente</label>
+                        <input type="text" id="patient-name" class="form-control" placeholder="Ej: Mateo Urdaneta" required>
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label for="patient-age"><i data-lucide="calendar"></i> Edad</label>
+                            <input type="number" id="patient-age" class="form-control" min="2" max="18" required oninput="suggestCategoryByAge(this.value)">
+                        </div>
+                        <div class="form-group">
+                            <label for="patient-category"><i data-lucide="sliders"></i> Tipo / Categoría</label>
+                            <select id="patient-category" class="form-control" required>
+                                <option value="child">Niño (UI Infantil)</option>
+                                <option value="adolescent">Adolescente (UI clásica)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="patient-access-code"><i data-lucide="key"></i> Código de Acceso Único</label>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <input type="text" id="patient-access-code" class="form-control" placeholder="Ej: MATEO89" required style="text-transform: uppercase;">
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="generateRandomAccessCode()">Autogenerar</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="patient-parent-name"><i data-lucide="users"></i> Nombre del Padre/Madre / Tutor</label>
+                        <input type="text" id="patient-parent-name" class="form-control" placeholder="Ej: María Pérez" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="patient-parent-email"><i data-lucide="mail"></i> Correo Electrónico del Padre</label>
+                        <input type="email" id="patient-parent-email" class="form-control" placeholder="Ej: maria@gmail.com">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeNewPatientModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-accent">Crear Ficha de Paciente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: ASSIGN TASK OR YOUTUBE VIDEO (THERAPIST) -->
+    <div id="modal-assign-task" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i data-lucide="clipboard-list" class="text-accent"></i> Asignar Tarea o Video de YouTube</h3>
+                <button class="modal-close" onclick="closeAssignTaskModal()">&times;</button>
+            </div>
+            <form id="form-assign-task" onsubmit="saveAssignedTask(event)">
+                <div class="modal-body">
+                    <p class="modal-desc" id="assign-task-desc">Asigna actividades para el hogar.</p>
+                    
+                    <div class="form-group">
+                        <label for="task-title"><i data-lucide="bookmark"></i> Título de la Tarea</label>
+                        <input type="text" id="task-title" class="form-control" placeholder="Ej: Respirar con la pancita o Video de Inteligencia Emocional" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="task-desc"><i data-lucide="align-left"></i> Instrucciones / Descripción</label>
+                        <textarea id="task-desc" class="form-control" rows="3" placeholder="Indica detalladamente qué debe hacer el paciente o la familia..." required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="task-type"><i data-lucide="type"></i> Tipo de Asignación</label>
+                        <select id="task-type" class="form-control" onchange="toggleYoutubeUrlField(this.value)" required>
+                            <option value="exercise">Ejercicio Práctico (Actividad escrita o archivo)</option>
+                            <option value="video">Ver Video (YouTube)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="group-youtube-url" style="display: none;">
+                        <label for="task-youtube-url"><i data-lucide="video"></i> Enlace/Link de YouTube</label>
+                        <span class="label-help">Copia el link del video de YouTube. Se incrustará el reproductor en el portal del paciente.</span>
+                        <input type="url" id="task-youtube-url" class="form-control" placeholder="Ej: https://www.youtube.com/watch?v=dQw4w9WgXcQ">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="task-due"><i data-lucide="calendar-clock"></i> Fecha Límite de Entrega</label>
+                        <input type="date" id="task-due" class="form-control" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeAssignTaskModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-accent">Asignar Actividad</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: LOG CLINICAL CONSULTATION (THERAPIST) -->
     <div id="modal-consultation" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
-                <h3><i data-lucide="calendar-heart" class="text-accent"></i> Registrar Consulta Psicológica</h3>
+                <h3><i data-lucide="calendar-heart" class="text-accent"></i> Registrar Consulta de Terapia</h3>
                 <button class="modal-close" onclick="closeConsultationModal()">&times;</button>
             </div>
             <form id="form-consultation" onsubmit="saveConsultation(event)">
                 <div class="modal-body">
-                    <p class="modal-desc">Registra la fecha y hora de la consulta realizada con el paciente Paul y añade las notas o técnicas trabajadas en la sesión.</p>
+                    <p class="modal-desc">Registra la fecha y las anotaciones internas sobre la sesión con el paciente. Estas notas no serán visibles en el portal de la familia.</p>
                     
                     <div class="form-group">
                         <label for="consultation-date"><i data-lucide="calendar"></i> Fecha de la Consulta</label>
-                        <input type="date" id="consultation-date" required>
+                        <input type="date" id="consultation-date" class="form-control" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="consultation-notes"><i data-lucide="sticky-note"></i> Notas de la Sesión (Opcional)</label>
-                        <textarea id="consultation-notes" rows="3" placeholder="Ej: Trabajamos reestructuración cognitiva de pensamientos automáticos y respiración..."></textarea>
+                        <label for="consultation-notes"><i data-lucide="sticky-note"></i> Notas Clínicas de la Sesión</label>
+                        <textarea id="consultation-notes" class="form-control" rows="4" placeholder="Ej: Se trabajó la relajación diafragmática ante situaciones de enojo. Muestra buena disposición..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -542,26 +713,26 @@
         </div>
     </div>
 
-    <!-- MODAL 2: WRITE TASK REPLY (PAUL) -->
+    <!-- MODAL 4: WRITE TASK REPLY (PATIENT/PARENT) -->
     <div id="modal-task-reply" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
-                <h3><i data-lucide="file-up" class="text-indigo"></i> Responder a Tarea</h3>
+                <h3><i data-lucide="file-up" class="text-indigo"></i> Entregar Actividad</h3>
                 <button class="modal-close" onclick="closeTaskReplyModal()">&times;</button>
             </div>
             <form id="form-task-reply" onsubmit="saveTaskReply(event)">
                 <input type="hidden" id="reply-task-id">
                 <div class="modal-body">
-                    <p class="modal-desc" id="reply-task-title">Tarea: [Nombre de la tarea]</p>
+                    <p class="modal-desc" id="reply-task-title">Tarea: [Nombre]</p>
                     
                     <div class="form-group">
-                        <label for="reply-content"><i data-lucide="align-left"></i> Tu Respuesta o Conclusión</label>
-                        <textarea id="reply-content" rows="4" placeholder="Escribe aquí los resultados de tu tarea o las respuestas a las preguntas asignadas..." required></textarea>
+                        <label for="reply-content"><i data-lucide="align-left"></i> Escribe tu respuesta, experiencia o comentarios</label>
+                        <textarea id="reply-content" class="form-control" rows="4" placeholder="Escribe aquí tu conclusión de la tarea o cómo te fue realizándola..." required></textarea>
                     </div>
 
                     <div class="form-group">
                         <label for="reply-file"><i data-lucide="paperclip"></i> Adjuntar Archivo (Opcional)</label>
-                        <span class="label-help">Puedes adjuntar reportes en PDF, fotos del ejercicio o documentos escritos.</span>
+                        <span class="label-help">Puedes subir fotos del dibujo, hojas completas en PDF o documentos.</span>
                         <input type="file" id="reply-file" class="file-input-custom" onchange="handleFileSelected(this)">
                         
                         <div id="file-preview-container" class="file-preview-box" style="display: none;">
@@ -576,95 +747,32 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeTaskReplyModal()">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Enviar Tarea</button>
+                    <button type="submit" class="btn btn-primary">Enviar Respuesta</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- MODAL 3: ADD CLINICAL COMMENT (EMILY) -->
+    <!-- MODAL 5: ADD CLINICAL COMMENT (THERAPIST) -->
     <div id="modal-clinical-comment" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
-                <h3><i data-lucide="message-square" class="text-teal"></i> Comentario Clínico</h3>
+                <h3><i data-lucide="message-square" class="text-teal"></i> Dejar Orientación o Comentario Clínico</h3>
                 <button class="modal-close" onclick="closeClinicalCommentModal()">&times;</button>
             </div>
             <form id="form-clinical-comment" onsubmit="saveClinicalComment(event)">
                 <input type="hidden" id="comment-record-id">
                 <div class="modal-body">
-                    <p class="modal-desc">Añade una retroalimentación, observación o recomendación a este registro emocional. Paul la verá en su historial.</p>
+                    <p class="modal-desc">Añade retroalimentación clínica a este registro. Será visible en el portal de la familia.</p>
                     
                     <div class="form-group">
-                        <label for="clinical-comment-content"><i data-lucide="edit-3"></i> Observación Clínica</label>
-                        <textarea id="clinical-comment-content" rows="4" placeholder="Ej: Excelente identificación del pensamiento automático. Intenta cuestionar la probabilidad de que eso ocurra la próxima vez..." required></textarea>
+                        <label for="clinical-comment-content"><i data-lucide="edit-3"></i> Observación Clínica / Orientación</label>
+                        <textarea id="clinical-comment-content" class="form-control" rows="4" placeholder="Ej: ¡Excelente observación, Mateo! Sigue respirando fuerte la próxima vez..." required></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeClinicalCommentModal()">Cancelar</button>
-                    <button type="submit" class="btn btn-teal">Guardar Comentario</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- MODAL 4: THERAPIST AUTHENTICATION -->
-    <div id="modal-therapist-auth" class="modal-overlay">
-        <div class="modal-content max-width-xs">
-            <div class="modal-header">
-                <h3><i data-lucide="lock" class="text-teal"></i> Acceso Psicóloga</h3>
-                <button class="modal-close" onclick="closeTherapistAuthModal()">&times;</button>
-            </div>
-            <form id="form-therapist-auth" onsubmit="handleTherapistAuth(event)">
-                <div class="modal-body">
-                    <p class="modal-desc" id="auth-modal-desc">Ingresa la contraseña para ingresar al panel clínico.</p>
-                    
-                    <div class="form-group">
-                        <label for="therapist-password-input"><i data-lucide="key-round"></i> Contraseña</label>
-                        <input type="password" id="therapist-password-input" class="form-control" placeholder="Escribe la contraseña..." required>
-                    </div>
-                    
-                    <div class="form-group margin-top-sm" id="pwd-confirm-group" style="display: none;">
-                        <label for="therapist-password-confirm"><i data-lucide="shield-check"></i> Confirmar Contraseña</label>
-                        <input type="password" id="therapist-password-confirm" class="form-control" placeholder="Repite la contraseña...">
-                    </div>
-                    
-                    <div id="auth-error-msg" class="auth-error-message" style="color: #ef4444; font-size: 0.8rem; margin-top: 0.5rem; display: none;"></div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeTherapistAuthModal()">Cancelar</button>
-                    <button type="submit" class="btn btn-teal" id="btn-auth-submit">Ingresar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- MODAL 5: CHANGE PASSWORD -->
-    <div id="modal-change-password" class="modal-overlay">
-        <div class="modal-content max-width-xs">
-            <div class="modal-header">
-                <h3><i data-lucide="key" class="text-teal"></i> Cambiar Contraseña</h3>
-                <button class="modal-close" onclick="closeChangePasswordModal()">&times;</button>
-            </div>
-            <form id="form-change-password" onsubmit="handleChangePasswordSubmit(event)">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="change-pwd-current"><i data-lucide="lock"></i> Contraseña Actual</label>
-                        <input type="password" id="change-pwd-current" class="form-control" placeholder="Escribe la contraseña actual..." required>
-                    </div>
-                    <div class="form-group margin-top-sm">
-                        <label for="change-pwd-new"><i data-lucide="key-round"></i> Nueva Contraseña</label>
-                        <input type="password" id="change-pwd-new" class="form-control" placeholder="Escribe la nueva contraseña..." required>
-                    </div>
-                    <div class="form-group margin-top-sm">
-                        <label for="change-pwd-confirm"><i data-lucide="shield-alert"></i> Confirmar Nueva Contraseña</label>
-                        <input type="password" id="change-pwd-confirm" class="form-control" placeholder="Confirma la nueva contraseña..." required>
-                    </div>
-                    <div id="change-pwd-error-msg" style="color: #ef4444; font-size: 0.8rem; margin-top: 0.5rem; display: none;"></div>
-                    <div id="change-pwd-success-msg" style="color: #10b981; font-size: 0.8rem; margin-top: 0.5rem; display: none;"></div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeChangePasswordModal()">Cancelar</button>
-                    <button type="submit" class="btn btn-teal">Actualizar Contraseña</button>
+                    <button type="submit" class="btn btn-teal">Guardar Orientación</button>
                 </div>
             </form>
         </div>
@@ -673,6 +781,6 @@
     <!-- Supabase CDN JS Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Custom Script -->
-    <script src="app.js"></script>
+    <script src="app_v2.js"></script>
 </body>
 </html>

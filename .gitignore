@@ -10,3 +10,7 @@ uploads/*
 .env
 .DS_Store
 Thumbs.db
+
+# Agent skills and local clones
+.agent/
+~/
