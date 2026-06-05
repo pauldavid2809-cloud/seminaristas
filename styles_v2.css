@@ -1427,6 +1427,16 @@ body.theme-child .daily-habit-item input[type="checkbox"]:checked {
     color: var(--text-primary);
 }
 
+.emo-ansiedad { --color-emo: #818cf8; }
+.emo-tristeza { --color-emo: #3b82f6; }
+.emo-ira { --color-emo: #ef4444; }
+.emo-frustracion { --color-emo: #f97316; }
+.emo-culpa { --color-emo: #a78bfa; }
+.emo-miedo { --color-emo: #4b5563; }
+.emo-alegria { --color-emo: #fbbf24; }
+.emo-calma { --color-emo: #10b981; }
+.emo-otro { --color-emo: #6b7280; }
+
 /* Checked status dynamic coloring mapping */
 .emotion-checkbox-label input:checked + .emotion-chip {
     color: #ffffff;

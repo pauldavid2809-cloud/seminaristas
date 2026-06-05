@@ -1184,6 +1184,8 @@ function setupNewRecordForm() {
     childSelectedEmotion = "";
     document.querySelectorAll(".emoji-selector-btn").forEach(btn => btn.classList.remove("active"));
     setChildIntensity(50, document.querySelectorAll(".child-rating-star")[1]);
+    const otherGroup = document.getElementById("group-other-emotion");
+    if (otherGroup) otherGroup.style.display = "none";
 
     if (state.currentPatient.category === 'child') {
         childFields.style.display = "block";
@@ -1208,6 +1210,17 @@ function setChildIntensity(val, btn) {
     document.querySelectorAll(".child-rating-star").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
     document.getElementById("child-intensity-value").value = val;
+}
+
+function toggleOtherEmotionInput(checkbox) {
+    const group = document.getElementById("group-other-emotion");
+    if (group) {
+        group.style.display = checkbox.checked ? "block" : "none";
+        if (checkbox.checked) {
+            const input = document.getElementById("record-emotion-other-text");
+            if (input) input.focus();
+        }
+    }
 }
 
 function updateIntensityDisplay(val) {
@@ -2043,6 +2056,7 @@ window.saveClinicalComment = saveClinicalComment;
 window.toggleActivityState = toggleActivityState;
 window.navigateToTab = navigateToTab;
 window.selectChildEmotion = selectChildEmotion;
+window.toggleOtherEmotionInput = toggleOtherEmotionInput;
 window.setChildIntensity = setChildIntensity;
 window.saveSelfRecord = saveSelfRecord;
 window.applyFamilyFilters = applyFamilyFilters;
