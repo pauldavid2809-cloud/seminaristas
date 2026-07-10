@@ -46,8 +46,9 @@ const ROLES_FIJOS = [
     repite y nadie tiene cocina y liturgia el mismo día. Todos cocinan
     2 veces; los 2 turnos extra del día 27 (despedida) los cubren
     Dany Araujo (responsable de cocina) y Rixio García.
-  - Liturgia: 1 por día. Todos sirven 1 vez; Armando Celis (responsable)
-    sirve 2 veces: llegada y despedida.
+  - Liturgia: 2 por día, con las mismas reglas de la cocina. Todos sirven
+    2 veces; los 2 turnos extra los cubren Armando Celis (responsable de
+    liturgia, presente en la llegada y la despedida) y Jorge Reyes.
 */
 
 const DIAS = [
@@ -60,7 +61,7 @@ const DIAS = [
     responsables: ["Templo parroquial"],
     alimentacion: [],
     cocina: ["Dany Araujo", "Paul Urdaneta"],
-    liturgia: ["Armando Celis"],
+    liturgia: ["Armando Celis", "Luis Polanco"],
   },
   {
     fecha: "2026-07-18",
@@ -75,7 +76,7 @@ const DIAS = [
     responsables: ["Filial Divino Niño"],
     alimentacion: ["Almuerzo", "Transporte"],
     cocina: ["Armando Celis", "Alfenyer Fernández"],
-    liturgia: ["Luis Polanco"],
+    liturgia: ["Jorge Reyes", "Rixio García"],
   },
   {
     fecha: "2026-07-19",
@@ -89,7 +90,7 @@ const DIAS = [
     responsables: ["Templo parroquial"],
     alimentacion: [],
     cocina: ["Luis Polanco", "Rances Mercado"],
-    liturgia: ["Jorge Reyes"],
+    liturgia: ["Alfenyer Fernández", "Mario Soto"],
   },
   {
     fecha: "2026-07-20",
@@ -102,7 +103,7 @@ const DIAS = [
     responsables: ["Delegados de la palabra y Sagrada Comunión"],
     alimentacion: ["Desayuno", "Almuerzo (Marianela)"],
     cocina: ["Jorge Reyes", "Mario Soto"],
-    liturgia: ["Alfenyer Fernández"],
+    liturgia: ["Dany Araujo", "Paul Urdaneta"],
   },
   {
     fecha: "2026-07-21",
@@ -115,7 +116,7 @@ const DIAS = [
     responsables: ["Legión de María"],
     alimentacion: ["Almuerzo", "Cena"],
     cocina: ["Alejandro Rubio", "Rixio García"],
-    liturgia: ["Rances Mercado"],
+    liturgia: ["Rances Mercado", "Jorge Reyes"],
   },
   {
     fecha: "2026-07-22",
@@ -134,7 +135,7 @@ const DIAS = [
       "Cena (Pastoral Juvenil y H. Samuel)",
     ],
     cocina: ["Dany Araujo", "Luis Polanco"],
-    liturgia: ["Mario Soto"],
+    liturgia: ["Armando Celis", "Alejandro Rubio"],
   },
   {
     fecha: "2026-07-23",
@@ -150,7 +151,7 @@ const DIAS = [
       "Cena (Pastoral Juvenil y H. Samuel)",
     ],
     cocina: ["Paul Urdaneta", "Jorge Reyes"],
-    liturgia: ["Alejandro Rubio"],
+    liturgia: ["Luis Polanco", "Rixio García"],
   },
   {
     fecha: "2026-07-24",
@@ -166,7 +167,7 @@ const DIAS = [
       "Cena (Cofradías)",
     ],
     cocina: ["Armando Celis", "Alejandro Rubio"],
-    liturgia: ["Rixio García"],
+    liturgia: ["Dany Araujo", "Mario Soto"],
   },
   {
     fecha: "2026-07-25",
@@ -185,7 +186,7 @@ const DIAS = [
       "Compartir (Monaguillos)",
     ],
     cocina: ["Alfenyer Fernández", "Rixio García"],
-    liturgia: ["Dany Araujo"],
+    liturgia: ["Rances Mercado", "Alejandro Rubio"],
   },
   {
     fecha: "2026-07-26",
@@ -207,7 +208,7 @@ const DIAS = [
       "Cena: Cursillos de Cristiandad",
     ],
     cocina: ["Rances Mercado", "Mario Soto"],
-    liturgia: ["Paul Urdaneta"],
+    liturgia: ["Alfenyer Fernández", "Paul Urdaneta"],
   },
   {
     fecha: "2026-07-27",
@@ -218,7 +219,7 @@ const DIAS = [
     responsables: ["Templo parroquial"],
     alimentacion: [],
     cocina: ["Dany Araujo", "Rixio García"],
-    liturgia: ["Armando Celis"],
+    liturgia: ["Armando Celis", "Jorge Reyes"],
   },
 ];
 
@@ -396,10 +397,9 @@ function renderMiTurno() {
   const turnosDia = (lista, icono, etiqueta) =>
     lista
       .map((d) => {
-        const companeros =
-          etiqueta === "Cocina"
-            ? d.cocina.filter((p) => p !== s)
-            : [];
+        const companeros = (etiqueta === "Cocina" ? d.cocina : d.liturgia).filter(
+          (p) => p !== s
+        );
         return `<li>
             <span class="badge turno">${d.nombre}</span>
             <strong>${icono} ${etiqueta}</strong>
@@ -500,7 +500,7 @@ function renderEquipo() {
           <tbody>${resumen}</tbody>
         </table>
       </div>
-      <p class="mini-dia">Todos cocinan 2 veces; Dany (responsable de cocina) y Rixio cubren el día de la despedida. Armando (responsable de liturgia) sirve en la llegada y la despedida.</p>
+      <p class="mini-dia">Todos cocinan 2 veces; Dany (responsable de cocina) y Rixio cubren el día de la despedida. En liturgia todos sirven 2 veces; Armando (responsable de liturgia) y Jorge cubren los turnos extra.</p>
     </div>
   `;
 }

@@ -437,15 +437,6 @@ tbody tr:nth-child(even) {
   min-width: 0;
 }
 
-/* ---------- Pie ---------- */
-
-.pie {
-  text-align: center;
-  font-size: 0.7rem;
-  color: var(--tinta-suave);
-  padding: 8px 16px 20px;
-}
-
 /* ---------- Pantallas grandes ---------- */
 
 @media (min-width: 720px) {
