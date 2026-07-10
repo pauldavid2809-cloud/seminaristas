@@ -19,6 +19,11 @@ const SEMINARISTAS = [
 ];
 
 const ROLES_FIJOS = [
+  {
+    rol: "Coordinación general: Disciplina y logística",
+    icono: "🧭",
+    personas: ["Paul Urdaneta", "Rixio García"],
+  },
   { rol: "Cocina (responsable)", icono: "🍲", personas: ["Dany Araujo"] },
   { rol: "Liturgia (responsable)", icono: "📖", personas: ["Armando Celis"] },
   {

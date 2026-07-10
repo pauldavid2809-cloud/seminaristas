@@ -7,7 +7,7 @@ Webapp para las misiones del **17 al 27 de julio de 2026** (Arquidiócesis de Ma
 - **Por día**: actividades del cronograma parroquial, responsables (grupos parroquiales), alimentación, y el equipo interno del día (2 de cocina y 2 de liturgia). Al abrirla durante las misiones, muestra el día de hoy automáticamente.
 - **Mi turno**: cada seminarista elige su nombre y ve sus roles fijos, sus días de cocina (y con quién) y sus días de liturgia.
 - **Cronograma**: la tabla completa de los 11 días, adaptada de la minuta CPP del 03 de julio.
-- **Equipo**: los 10 seminaristas, los roles fijos y el resumen de la distribución de turnos.
+- **Equipo**: los 10 seminaristas, la coordinación general (disciplina y logística: Paul Urdaneta y Rixio García), los roles fijos y el resumen de la distribución de turnos.
 
 ## Rotación
 
