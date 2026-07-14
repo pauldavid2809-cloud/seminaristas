@@ -437,6 +437,384 @@ tbody tr:nth-child(even) {
   min-width: 0;
 }
 
+/* ---------- Censo: formulario ---------- */
+
+.btn-principal,
+.btn-secundario {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.btn-principal {
+  background: var(--marron);
+  color: var(--dorado-claro);
+}
+
+.btn-principal:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.btn-secundario {
+  background: var(--blanco);
+  color: var(--marron);
+  border: 1px solid var(--linea);
+}
+
+.btn-registrar {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  font-size: 1rem;
+  margin-bottom: 12px;
+  box-shadow: var(--sombra);
+}
+
+.form-campo {
+  margin-bottom: 10px;
+  flex: 1;
+}
+
+.form-campo label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--marron-oscuro);
+  margin-bottom: 4px;
+}
+
+.form-campo input,
+.form-campo select,
+.form-campo textarea,
+.censo-filtros input,
+.censo-filtros select {
+  width: 100%;
+  border: 1px solid var(--linea);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 0.92rem;
+  font-family: inherit;
+  background: var(--blanco);
+  color: var(--tinta);
+}
+
+.form-campo input:focus,
+.form-campo select:focus,
+.form-campo textarea:focus,
+.censo-filtros input:focus {
+  outline: 2px solid var(--dorado);
+  border-color: var(--dorado);
+}
+
+.form-fila {
+  display: flex;
+  gap: 10px;
+}
+
+.form-persona {
+  border: 1px dashed var(--dorado);
+  border-radius: var(--radio);
+  padding: 12px;
+  margin-bottom: 10px;
+  background: var(--crema);
+}
+
+.form-persona-cab {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  color: var(--marron-oscuro);
+  font-size: 0.88rem;
+}
+
+.btn-quitar {
+  border: none;
+  background: none;
+  color: var(--rojo);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.form-contexto {
+  margin-bottom: 10px;
+}
+
+.form-acciones {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.form-error {
+  color: var(--rojo);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+/* ---------- Censo: chips de categorías ---------- */
+
+.cat-chips,
+.filtro-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.filtro-chips {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding: 2px;
+  scrollbar-width: none;
+}
+
+.filtro-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.cat-chip {
+  flex: 0 0 auto;
+  border: 1px solid var(--linea);
+  background: var(--blanco);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--tinta);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.cat-chip.activo {
+  background: var(--marron);
+  border-color: var(--marron);
+  color: var(--dorado-claro);
+}
+
+/* ---------- Censo: filtros ---------- */
+
+.censo-filtros {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.filtro-selects {
+  display: flex;
+  gap: 8px;
+}
+
+.filtro-selects select {
+  flex: 1;
+}
+
+.filtro-selects .btn-secundario {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+}
+
+.censo-contador {
+  font-size: 0.8rem;
+  color: var(--tinta-suave);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+/* ---------- Censo: lista de casas y personas ---------- */
+
+.casa-cab {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--linea);
+  margin-bottom: 8px;
+}
+
+.casa-cab a {
+  color: var(--marron);
+}
+
+.casa-botones {
+  display: flex;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.btn-mini {
+  border: 1px solid var(--linea);
+  background: var(--crema);
+  border-radius: 8px;
+  padding: 4px 9px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--tinta);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.persona-censo {
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--linea);
+}
+
+.persona-censo:last-of-type {
+  border-bottom: none;
+}
+
+.persona-censo-cab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.persona-censo-cab strong {
+  color: var(--marron-oscuro);
+}
+
+.persona-censo-badges {
+  margin: 4px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.persona-censo-pie {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.registro-pie {
+  margin-left: auto;
+}
+
+.btn-whatsapp {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #25d366;
+  color: var(--blanco);
+  text-decoration: none;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 5px 12px;
+}
+
+.select-estado {
+  border-radius: 999px;
+  border: 1px solid var(--linea);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  font-family: inherit;
+  margin-left: auto;
+}
+
+.est-pendiente,
+.badge.est-pendiente {
+  background: #f6dcd5;
+  color: var(--rojo);
+}
+
+.est-en-proceso,
+.badge.est-en-proceso {
+  background: var(--dorado-claro);
+  color: var(--marron-oscuro);
+}
+
+.est-atendido,
+.badge.est-atendido {
+  background: #dcead9;
+  color: var(--verde);
+}
+
+/* ---------- Censo: aviso offline ---------- */
+
+.aviso-offline {
+  background: var(--dorado-claro);
+  border: 1px solid var(--dorado);
+  border-radius: var(--radio);
+  padding: 12px 14px;
+  font-size: 0.85rem;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ---------- Estadísticas ---------- */
+
+.stats-estados {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.barra-fila {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 0.85rem;
+}
+
+.barra-etiqueta {
+  flex: 0 0 44%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.barra-pista {
+  flex: 1;
+  height: 10px;
+  background: var(--crema);
+  border: 1px solid var(--linea);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.barra-relleno {
+  height: 100%;
+  background: var(--dorado);
+  border-radius: 999px;
+}
+
+.barra-valor {
+  flex: 0 0 auto;
+  font-weight: 700;
+  color: var(--marron-oscuro);
+  white-space: nowrap;
+}
+
+.tabla-cruce {
+  min-width: 560px;
+}
+
+.btn-actualizar {
+  display: block;
+  width: 100%;
+  padding: 12px;
+}
+
 /* ---------- Pantallas grandes ---------- */
 
 @media (min-width: 720px) {

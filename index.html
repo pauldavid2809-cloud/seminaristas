@@ -21,6 +21,8 @@
     <button class="tab" data-vista="mi">🙋<span>Mi turno</span></button>
     <button class="tab" data-vista="cronograma">🗓️<span>Cronograma</span></button>
     <button class="tab" data-vista="equipo">👥<span>Equipo</span></button>
+    <button class="tab" data-vista="censo">📋<span>Censo</span></button>
+    <button class="tab" data-vista="stats">📊<span>Stats</span></button>
   </nav>
 
   <main>
@@ -63,8 +65,24 @@
     <section id="vista-equipo" class="vista">
       <div id="vista-equipo-detalle"></div>
     </section>
+
+    <!-- Vista: Censo de la misión -->
+    <section id="vista-censo" class="vista">
+      <div id="censo-aviso-offline"></div>
+      <div id="censo-form"></div>
+      <div id="censo-filtros"></div>
+      <div id="censo-lista"></div>
+    </section>
+
+    <!-- Vista: Estadísticas -->
+    <section id="vista-stats" class="vista">
+      <div id="stats-contenido"></div>
+    </section>
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
   <script src="app.js"></script>
+  <script src="censo.js"></script>
 </body>
 </html>
