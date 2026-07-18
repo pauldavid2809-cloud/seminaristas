@@ -4,8 +4,8 @@ Webapp para las misiones del **17 al 31 de julio de 2026** (Arquidiócesis de Ma
 
 ## Qué incluye
 
-- **Por día**: actividades del cronograma parroquial, responsables (grupos parroquiales), alimentación, y el equipo interno del día (2 de cocina, 2 responsables de liturgia y 1 lector). Al abrirla durante las misiones, muestra el día de hoy automáticamente.
-- **Mi turno**: cada seminarista elige su nombre y ve sus roles fijos, sus días de cocina (y con quién), sus días de liturgia y sus días de lector.
+- **Por día**: actividades del cronograma parroquial, responsables (grupos parroquiales), alimentación, y el equipo interno del día (2 de cocina, 2 responsables de liturgia, 1 lector y 2 de platos/mesa). Al abrirla durante las misiones, muestra el día de hoy automáticamente.
+- **Mi turno**: cada seminarista elige su nombre y ve sus roles fijos, sus días de cocina (y con quién), sus días de liturgia, de lector y de platos/mesa.
 - **Cronograma**: la tabla completa de los 15 días, adaptada de la minuta CPP del 03 de julio y de la organización litúrgica del 17 al 31.
 - **Equipo**: los 10 seminaristas, la coordinación general (disciplina y logística: Paul Urdaneta y Rixio García), los roles fijos y el resumen de la distribución de turnos.
 - **Censo**: registro de las casas visitadas y sus personas — enfermos, niños para Primera Comunión y Confirmación, personas vulnerables, bautizos pendientes, matrimonios por regularizar y unción/comunión a enfermos. Los datos se comparten entre todos los teléfonos (Supabase). Cada persona tiene estado de seguimiento (pendiente / en proceso / atendido) y botón de WhatsApp directo. Si se registra sin señal, queda guardado en el teléfono y se envía al recuperar conexión.
@@ -15,6 +15,7 @@ Webapp para las misiones del **17 al 31 de julio de 2026** (Arquidiócesis de Ma
 
 - **Cocina**: 2 por día, sin parejas repetidas ni días seguidos. Los turnos del 28 al 31 están por confirmar.
 - **Liturgia** (organización litúrgica del 17 al 31 de julio): 2 responsables y 1 lector por día. Todos son responsables 3 veces y lector 1 o 2 veces.
+- **Platos y mesa** (lavado de platos / poner la mesa, del 18 al 31): 2 por día, sin chocar con cocina, liturgia ni lector del mismo día, sin parejas repetidas ni días seguidos. Todos sirven 3 veces, salvo Alfenyer y Rances (2).
 
 ## Cómo usarla
 
