@@ -52,6 +52,10 @@ const ROLES_FIJOS = [
     28 al 31 están por confirmar.
   - Liturgia (organización litúrgica 17-31 de julio): 2 responsables y
     1 lector por día. Todos son responsables 3 veces y lector 1 o 2 veces.
+  - Platos y mesa (lavado de platos / poner la mesa, del 18 al 31): 2 por
+    día, sin chocar con cocina, liturgia ni lector del mismo día, sin
+    parejas repetidas ni días seguidos. Todos sirven 3 veces, salvo
+    Alfenyer y Rances (2).
 */
 
 const DIAS = [
@@ -82,6 +86,7 @@ const DIAS = [
     cocina: ["Armando Celis", "Alfenyer Fernández"],
     liturgia: ["Jorge Reyes", "Rixio García"],
     lector: "Dany Araujo",
+    mesa: ["Luis Polanco", "Mario Soto"],
   },
   {
     fecha: "2026-07-19",
@@ -97,6 +102,7 @@ const DIAS = [
     cocina: ["Luis Polanco", "Rances Mercado"],
     liturgia: ["Alfenyer Fernández", "Mario Soto"],
     lector: "Rixio García",
+    mesa: ["Alejandro Rubio", "Paul Urdaneta"],
   },
   {
     fecha: "2026-07-20",
@@ -111,6 +117,7 @@ const DIAS = [
     cocina: ["Jorge Reyes", "Mario Soto"],
     liturgia: ["Dany Araujo", "Paul Urdaneta"],
     lector: "Alejandro Rubio",
+    mesa: ["Rances Mercado", "Rixio García"],
   },
   {
     fecha: "2026-07-21",
@@ -125,6 +132,7 @@ const DIAS = [
     cocina: ["Alejandro Rubio", "Rixio García"],
     liturgia: ["Rances Mercado", "Jorge Reyes"],
     lector: "Alfenyer Fernández",
+    mesa: ["Armando Celis", "Dany Araujo"],
   },
   {
     fecha: "2026-07-22",
@@ -145,6 +153,7 @@ const DIAS = [
     cocina: ["Dany Araujo", "Luis Polanco"],
     liturgia: ["Armando Celis", "Alejandro Rubio"],
     lector: "Rances Mercado",
+    mesa: ["Alfenyer Fernández", "Jorge Reyes"],
   },
   {
     fecha: "2026-07-23",
@@ -162,6 +171,7 @@ const DIAS = [
     cocina: ["Paul Urdaneta", "Jorge Reyes"],
     liturgia: ["Luis Polanco", "Rixio García"],
     lector: "Armando Celis",
+    mesa: ["Mario Soto", "Alejandro Rubio"],
   },
   {
     fecha: "2026-07-24",
@@ -179,6 +189,7 @@ const DIAS = [
     cocina: ["Armando Celis", "Alejandro Rubio"],
     liturgia: ["Dany Araujo", "Mario Soto"],
     lector: "Luis Polanco",
+    mesa: ["Rixio García", "Paul Urdaneta"],
   },
   {
     fecha: "2026-07-25",
@@ -199,6 +210,7 @@ const DIAS = [
     cocina: ["Alfenyer Fernández", "Rixio García"],
     liturgia: ["Rances Mercado", "Alejandro Rubio"],
     lector: "Paul Urdaneta",
+    mesa: ["Luis Polanco", "Dany Araujo"],
   },
   {
     fecha: "2026-07-26",
@@ -222,6 +234,7 @@ const DIAS = [
     cocina: ["Rances Mercado", "Mario Soto"],
     liturgia: ["Alfenyer Fernández", "Paul Urdaneta"],
     lector: "Rixio García",
+    mesa: ["Armando Celis", "Jorge Reyes"],
   },
   {
     fecha: "2026-07-27",
@@ -233,6 +246,7 @@ const DIAS = [
     cocina: ["Dany Araujo", "Rixio García"],
     liturgia: ["Armando Celis", "Jorge Reyes"],
     lector: "Alejandro Rubio",
+    mesa: ["Alfenyer Fernández", "Rances Mercado"],
   },
   {
     fecha: "2026-07-28",
@@ -244,6 +258,7 @@ const DIAS = [
     cocina: [],
     liturgia: ["Paul Urdaneta", "Alfenyer Fernández"],
     lector: "Rances Mercado",
+    mesa: ["Mario Soto", "Rixio García"],
   },
   {
     fecha: "2026-07-29",
@@ -255,6 +270,7 @@ const DIAS = [
     cocina: [],
     liturgia: ["Rances Mercado", "Mario Soto"],
     lector: "Dany Araujo",
+    mesa: ["Luis Polanco", "Alejandro Rubio"],
   },
   {
     fecha: "2026-07-30",
@@ -266,6 +282,7 @@ const DIAS = [
     cocina: [],
     liturgia: ["Alejandro Rubio", "Dany Araujo"],
     lector: "Jorge Reyes",
+    mesa: ["Armando Celis", "Paul Urdaneta"],
   },
   {
     fecha: "2026-07-31",
@@ -278,6 +295,7 @@ const DIAS = [
     cocina: [],
     liturgia: ["Rixio García", "Luis Polanco"],
     lector: "Armando Celis",
+    mesa: ["Dany Araujo", "Jorge Reyes"],
   },
 ];
 
@@ -400,6 +418,14 @@ function renderDia() {
         <span class="asignacion-rol">🎙️ Lector</span>
         <div class="personas">${chipPersona(d.lector)}</div>
       </div>
+      ${
+        d.mesa && d.mesa.length
+          ? `<div class="asignacion">
+        <span class="asignacion-rol">🍽️ Platos y mesa</span>
+        <div class="personas">${d.mesa.map((p) => chipPersona(p)).join("")}</div>
+      </div>`
+          : ""
+      }
     </div>
 
     <div class="card">
@@ -451,6 +477,7 @@ function renderMiTurno() {
   const diasCocina = DIAS.filter((d) => d.cocina.includes(s));
   const diasLiturgia = DIAS.filter((d) => d.liturgia.includes(s));
   const diasLector = DIAS.filter((d) => d.lector === s);
+  const diasMesa = DIAS.filter((d) => (d.mesa || []).includes(s));
 
   const rolesHTML = rolesFijos.length
     ? rolesFijos
@@ -464,9 +491,12 @@ function renderMiTurno() {
   const turnosDia = (lista, icono, etiqueta) =>
     lista
       .map((d) => {
-        const companeros = (etiqueta === "Cocina" ? d.cocina : d.liturgia).filter(
-          (p) => p !== s
-        );
+        const listas = {
+          Cocina: d.cocina,
+          Liturgia: d.liturgia,
+          "Platos y mesa": d.mesa || [],
+        };
+        const companeros = listas[etiqueta].filter((p) => p !== s);
         return `<li>
             <span class="badge turno">${d.nombre}</span>
             <strong>${icono} ${etiqueta}</strong>
@@ -485,7 +515,7 @@ function renderMiTurno() {
   cont.innerHTML = `
     <div class="card dia-encabezado">
       <h2>${s}</h2>
-      <p class="dia-titulo">${diasCocina.length} turno(s) de cocina · ${diasLiturgia.length} de liturgia · ${diasLector.length} de lector</p>
+      <p class="dia-titulo">${diasCocina.length} turno(s) de cocina · ${diasLiturgia.length} de liturgia · ${diasLector.length} de lector · ${diasMesa.length} de platos y mesa</p>
     </div>
 
     <div class="card">
@@ -501,6 +531,11 @@ function renderMiTurno() {
     <div class="card">
       <h3>📖 Mis días de liturgia</h3>
       <ul class="lista turnos">${turnosDia(diasLiturgia, "📖", "Liturgia")}</ul>
+    </div>
+
+    <div class="card">
+      <h3>🍽️ Mis días de platos y mesa</h3>
+      <ul class="lista turnos">${turnosDia(diasMesa, "🍽️", "Platos y mesa")}</ul>
     </div>
 
     <div class="card">
@@ -539,6 +574,7 @@ function renderCronograma() {
         <td>${d.cocina.length ? d.cocina.map(primerNombre).join(" y ") : "Por confirmar"}</td>
         <td>${d.liturgia.map(primerNombre).join(", ")}</td>
         <td>${primerNombre(d.lector)}</td>
+        <td>${d.mesa && d.mesa.length ? d.mesa.map(primerNombre).join(" y ") : "—"}</td>
       </tr>`;
   }).join("");
 
@@ -565,7 +601,8 @@ function renderEquipo() {
     const c = DIAS.filter((d) => d.cocina.includes(s)).length;
     const l = DIAS.filter((d) => d.liturgia.includes(s)).length;
     const le = DIAS.filter((d) => d.lector === s).length;
-    return `<tr><td>${s}</td><td>${c}</td><td>${l}</td><td>${le}</td></tr>`;
+    const m = DIAS.filter((d) => (d.mesa || []).includes(s)).length;
+    return `<tr><td>${s}</td><td>${c}</td><td>${l}</td><td>${le}</td><td>${m}</td></tr>`;
   }).join("");
 
   $("#vista-equipo-detalle").innerHTML = `
@@ -578,11 +615,11 @@ function renderEquipo() {
       <h3>⚖️ Distribución de turnos</h3>
       <div class="tabla-scroll">
         <table class="tabla-resumen">
-          <thead><tr><th>Seminarista</th><th>Cocina</th><th>Liturgia</th><th>Lector</th></tr></thead>
+          <thead><tr><th>Seminarista</th><th>Cocina</th><th>Liturgia</th><th>Lector</th><th>Platos/Mesa</th></tr></thead>
           <tbody>${resumen}</tbody>
         </table>
       </div>
-      <p class="mini-dia">Organización litúrgica del 17 al 31 de julio: cada día hay 2 responsables de liturgia y 1 lector; todos son responsables 3 veces y lector 1 o 2 veces. Los turnos de cocina del 28 al 31 están por confirmar.</p>
+      <p class="mini-dia">Organización litúrgica del 17 al 31 de julio: cada día hay 2 responsables de liturgia y 1 lector; todos son responsables 3 veces y lector 1 o 2 veces. Platos y mesa (del 18 al 31): 2 por día sin chocar con los demás servicios del día. Los turnos de cocina del 28 al 31 están por confirmar.</p>
     </div>
   `;
 }
