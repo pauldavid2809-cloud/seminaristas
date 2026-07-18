@@ -12,9 +12,12 @@ const CENSO_CONFIGURADO =
   SUPABASE_URL.startsWith("https://") &&
   !SUPABASE_URL.includes("PEGAR");
 
-const sb = CENSO_CONFIGURADO
-  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-  : null;
+/* window.supabase puede faltar si el CDN no cargó (sin señal): el resto de la
+   pestaña (la guía de preguntas) debe funcionar igual */
+const sb =
+  CENSO_CONFIGURADO && window.supabase
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    : null;
 
 const SALUDO_WA =
   "Saludos, le escribo de la Parroquia El Buen Pastor por la visita de las misiones 🙏";
@@ -24,13 +27,52 @@ const LS_PENDIENTES = "censo_pendientes";
 /* ---------- Catálogos ---------- */
 
 const CATEGORIAS = [
-  { slug: "enfermo", etiqueta: "Enfermo", emoji: "🤒" },
-  { slug: "primera_comunion", etiqueta: "Primera Comunión", emoji: "🍞" },
-  { slug: "confirmacion", etiqueta: "Confirmación", emoji: "🕊️" },
-  { slug: "vulnerable", etiqueta: "Persona vulnerable", emoji: "🤝" },
-  { slug: "bautizo", etiqueta: "Bautizo pendiente", emoji: "💧" },
-  { slug: "matrimonio", etiqueta: "Matrimonio por regularizar", emoji: "💍" },
-  { slug: "uncion", etiqueta: "Unción / comunión a enfermos", emoji: "⛪" },
+  {
+    slug: "enfermo",
+    etiqueta: "Enfermo",
+    emoji: "🤒",
+    pregunta: "¿Hay alguna persona enferma o encamada en la casa?",
+  },
+  {
+    slug: "primera_comunion",
+    etiqueta: "Primera Comunión",
+    emoji: "🍞",
+    pregunta:
+      "¿Hay niños o jóvenes que no hayan hecho la Primera Comunión y quieran prepararse?",
+  },
+  {
+    slug: "confirmacion",
+    etiqueta: "Confirmación",
+    emoji: "🕊️",
+    pregunta: "¿Hay jóvenes o adultos que no hayan recibido la Confirmación?",
+  },
+  {
+    slug: "vulnerable",
+    etiqueta: "Persona vulnerable",
+    emoji: "🤝",
+    pregunta:
+      "¿Vive aquí algún adulto mayor solo, persona con discapacidad o en situación de necesidad?",
+  },
+  {
+    slug: "bautizo",
+    etiqueta: "Bautizo pendiente",
+    emoji: "💧",
+    pregunta: "¿Hay niños o adultos sin bautizar que deseen recibir el bautismo?",
+  },
+  {
+    slug: "matrimonio",
+    etiqueta: "Matrimonio por regularizar",
+    emoji: "💍",
+    pregunta:
+      "¿Hay parejas que deseen casarse por la Iglesia o regularizar su unión?",
+  },
+  {
+    slug: "uncion",
+    etiqueta: "Unción / comunión a enfermos",
+    emoji: "⛪",
+    pregunta:
+      "¿Algún enfermo desea que le lleven la comunión o recibir la unción de los enfermos en casa?",
+  },
 ];
 
 const ESTADOS = {
@@ -144,6 +186,10 @@ async function refrescarCenso() {
     renderSinConfigurar("#censo-lista");
     return;
   }
+  if (!sb) {
+    renderSinConexion("#censo-lista");
+    return;
+  }
   const cont = document.querySelector("#censo-lista");
   if (!censoCargado) cont.innerHTML = `<div class="card vacio-card">Cargando el censo…</div>`;
   try {
@@ -164,6 +210,10 @@ async function refrescarCenso() {
 async function refrescarStats() {
   if (!CENSO_CONFIGURADO) {
     renderSinConfigurar("#stats-contenido");
+    return;
+  }
+  if (!sb) {
+    renderSinConexion("#stats-contenido");
     return;
   }
   const cont = document.querySelector("#stats-contenido");
@@ -210,7 +260,7 @@ async function insertarPaquete(paquete) {
 }
 
 async function sincronizarPendientes() {
-  if (!CENSO_CONFIGURADO) return;
+  if (!sb) return;
   let cola = pendientes();
   if (!cola.length) return;
   let cambio = false;
@@ -247,6 +297,52 @@ function renderAvisoOffline() {
       <button class="btn-secundario" data-accion="sincronizar">🔄 Enviar ahora</button>
     </div>`;
 }
+
+/* ---------- Guía de preguntas para la visita ---------- */
+
+function renderGuiaCenso() {
+  const cont = document.querySelector("#censo-guia");
+  if (!cont) return;
+  cont.innerHTML = `
+    <div class="card guia-censo">
+      <details>
+        <summary>❓ Preguntas para llenar el censo</summary>
+        <p class="mini-dia guia-intro">
+          Al llegar, preséntate: «Buenas, somos seminaristas misioneros de la
+          Parroquia El Buen Pastor y estamos visitando las casas del sector».
+          Luego pregunta:
+        </p>
+
+        <h4>🏠 La casa</h4>
+        <ul class="lista">
+          <li>¿Cuál es el apellido de la familia?</li>
+          <li>¿Cuál es la dirección de la casa o un punto de referencia?</li>
+          <li>¿Nos regala un número de teléfono (WhatsApp si tiene) para que la parroquia pueda contactarlos?</li>
+        </ul>
+
+        <h4>👤 Por cada persona a registrar</h4>
+        <ul class="lista">
+          <li>¿Cuál es su nombre y apellido?</li>
+          <li>¿Qué edad tiene?</li>
+        </ul>
+
+        <h4>✅ Para marcar sus categorías</h4>
+        <ul class="lista">
+          ${CATEGORIAS.map(
+            (c) => `<li>${c.emoji} <strong>${esc(c.etiqueta)}</strong>: ${esc(c.pregunta)}</li>`
+          ).join("")}
+        </ul>
+
+        <h4>📝 Para las notas</h4>
+        <ul class="lista">
+          <li>¿Algo más que la parroquia deba saber para acompañarlos? (horarios en que se les consigue, situación particular de la persona…)</li>
+          <li>Antes de despedirte: ¿podemos hacer una breve oración con ustedes?</li>
+        </ul>
+      </details>
+    </div>`;
+}
+
+renderGuiaCenso();
 
 /* ---------- Formulario ---------- */
 
@@ -841,6 +937,14 @@ function renderSinConfigurar(sel) {
     </div>`;
 }
 
+function renderSinConexion(sel) {
+  document.querySelector(sel).innerHTML = `
+    <div class="card vacio-card">
+      📶 No hubo señal al abrir la app y el censo no se pudo conectar.<br>
+      <span class="mini-dia">Cuando tengas conexión, recarga la página. Mientras tanto puedes usar la guía de preguntas.</span>
+    </div>`;
+}
+
 /* ---------- Eventos (delegación) ---------- */
 
 document.querySelector("#vista-censo").addEventListener("click", (ev) => {
@@ -932,5 +1036,5 @@ document.querySelectorAll(".tab").forEach((tab) => {
 
 /* Reintentar la cola offline al recuperar señal y al abrir la app */
 window.addEventListener("online", sincronizarPendientes);
-if (CENSO_CONFIGURADO) sincronizarPendientes();
+if (sb) sincronizarPendientes();
 renderAvisoOffline();
