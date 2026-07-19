@@ -13,7 +13,7 @@ Webapp para las misiones del **17 al 31 de julio de 2026** (Arquidiócesis de Ma
 
 ## Rotación
 
-- **Cocina**: 2 por día, sin parejas repetidas ni días seguidos. Los turnos del 28 al 31 están por confirmar.
+- **Cocina**: 2 por día, sin parejas repetidas ni días seguidos. Todos cocinan 3 veces.
 - **Liturgia** (organización litúrgica del 17 al 31 de julio): 2 responsables y 1 lector por día. Todos son responsables 3 veces y lector 1 o 2 veces.
 - **Platos y mesa** (lavado de platos / poner la mesa, del 18 al 31): 2 por día, sin chocar con cocina, liturgia ni lector del mismo día, sin parejas repetidas ni días seguidos. Todos sirven 3 veces, salvo Alfenyer y Rances (2).
 

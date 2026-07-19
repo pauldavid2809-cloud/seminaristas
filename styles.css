@@ -743,6 +743,30 @@ tbody tr:nth-child(even) {
   color: var(--verde);
 }
 
+/* ---------- Censo: guía de preguntas ---------- */
+
+.guia-censo summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--marron);
+  list-style-position: inside;
+}
+
+.guia-censo summary:hover {
+  color: var(--marron-oscuro);
+}
+
+.guia-censo h4 {
+  font-size: 0.88rem;
+  color: var(--marron);
+  margin: 14px 0 4px;
+}
+
+.guia-censo .guia-intro {
+  margin-top: 10px;
+}
+
 /* ---------- Censo: aviso offline ---------- */
 
 .aviso-offline {
