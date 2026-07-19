@@ -48,8 +48,8 @@ const ROLES_FIJOS = [
 /*
   Rotación interna:
   - Cocina: 2 por día. Nadie repite en días seguidos, ninguna pareja se
-    repite y nadie tiene cocina y liturgia el mismo día. Los turnos del
-    28 al 31 están por confirmar.
+    repite y nadie tiene cocina y otro servicio (liturgia, lector o
+    platos/mesa) el mismo día. Todos cocinan 3 veces.
   - Liturgia (organización litúrgica 17-31 de julio): 2 responsables y
     1 lector por día. Todos son responsables 3 veces y lector 1 o 2 veces.
   - Platos y mesa (lavado de platos / poner la mesa, del 18 al 31): 2 por
@@ -271,7 +271,7 @@ const DIAS = [
     actividades: [{ turno: "Día", desc: "Actividades por confirmar" }],
     responsables: ["Por confirmar"],
     alimentacion: [],
-    cocina: [],
+    cocina: ["Luis Polanco", "Jorge Reyes"],
     liturgia: ["Paul Urdaneta", "Alfenyer Fernández"],
     lector: "Rances Mercado",
     mesa: ["Mario Soto", "Rixio García"],
@@ -283,7 +283,7 @@ const DIAS = [
     actividades: [{ turno: "Día", desc: "Actividades por confirmar" }],
     responsables: ["Por confirmar"],
     alimentacion: [],
-    cocina: [],
+    cocina: ["Armando Celis", "Paul Urdaneta"],
     liturgia: ["Rances Mercado", "Mario Soto"],
     lector: "Dany Araujo",
     mesa: ["Luis Polanco", "Alejandro Rubio"],
@@ -295,7 +295,7 @@ const DIAS = [
     actividades: [{ turno: "Día", desc: "Actividades por confirmar" }],
     responsables: ["Por confirmar"],
     alimentacion: [],
-    cocina: [],
+    cocina: ["Alfenyer Fernández", "Rances Mercado"],
     liturgia: ["Alejandro Rubio", "Dany Araujo"],
     lector: "Jorge Reyes",
     mesa: ["Armando Celis", "Paul Urdaneta"],
@@ -308,7 +308,7 @@ const DIAS = [
     actividades: [{ turno: "Día", desc: "Despedida de los seminaristas" }],
     responsables: ["Templo parroquial"],
     alimentacion: [],
-    cocina: [],
+    cocina: ["Mario Soto", "Alejandro Rubio"],
     liturgia: ["Rixio García", "Luis Polanco"],
     lector: "Armando Celis",
     mesa: ["Dany Araujo", "Jorge Reyes"],
@@ -675,7 +675,7 @@ function renderEquipo() {
           <tbody>${resumen}</tbody>
         </table>
       </div>
-      <p class="mini-dia">Organización litúrgica del 17 al 31 de julio: cada día hay 2 responsables de liturgia y 1 lector; todos son responsables 3 veces y lector 1 o 2 veces. Platos y mesa (del 18 al 31): 2 por día sin chocar con los demás servicios del día. Los turnos de cocina del 28 al 31 están por confirmar.</p>
+      <p class="mini-dia">Organización litúrgica del 17 al 31 de julio: cada día hay 2 responsables de liturgia y 1 lector; todos son responsables 3 veces y lector 1 o 2 veces. Platos y mesa (del 18 al 31): 2 por día. Cocina: todos cocinan 3 veces. Nadie tiene dos servicios el mismo día.</p>
     </div>
   `;
 }
