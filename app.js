@@ -95,7 +95,7 @@ const DIAS = [
     actividades: [
       { turno: "Mañana", desc: "Eucaristías dominicales" },
       { turno: "Día", desc: "Comuniones" },
-      { turno: "Tarde", desc: "Rosario en un sector" },
+      { turno: "Tarde", desc: "Rosario en un sector", personas: ["Armando Celis"] },
     ],
     responsables: ["Templo parroquial"],
     alimentacion: [],
@@ -140,7 +140,11 @@ const DIAS = [
     titulo: "Sector Altos III",
     actividades: [
       { turno: "Mañana", desc: "Jornada de evangelización en el sector Altos III" },
-      { turno: "Tarde", desc: "Actividad juvenil" },
+      {
+        turno: "Tarde",
+        desc: "Actividad juvenil",
+        personas: ["Alfenyer Fernández", "Luis Polanco"],
+      },
     ],
     responsables: [
       "C.E. Rosa Mística (mañana)",
@@ -161,7 +165,11 @@ const DIAS = [
     titulo: "Sol Amado",
     actividades: [
       { turno: "Mañana", desc: "Actividad y jornada de evangelización en Sol Amado" },
-      { turno: "Tarde", desc: "Actividad con las familias" },
+      {
+        turno: "Tarde",
+        desc: "Actividad con las familias",
+        personas: ["Rances Mercado", "Alejandro Rubio"],
+      },
     ],
     responsables: ["Filial Divino Niño (mañana)", "Pastoral familiar (tarde)"],
     alimentacion: [
@@ -179,7 +187,11 @@ const DIAS = [
     titulo: "Sector Las Trinitarias",
     actividades: [
       { turno: "Mañana", desc: "Jornada de evangelización en el sector Las Trinitarias" },
-      { turno: "Tarde", desc: "Formación litúrgica" },
+      {
+        turno: "Tarde",
+        desc: "Formación litúrgica",
+        personas: ["Rixio García", "Armando Celis"],
+      },
     ],
     responsables: ["C.E. Santísima Trinidad (mañana)", "Cofradías (tarde)"],
     alimentacion: [
@@ -197,7 +209,11 @@ const DIAS = [
     titulo: "Sector Altos II",
     actividades: [
       { turno: "Mañana", desc: "Jornada de evangelización en el sector Altos II" },
-      { turno: "Tarde", desc: "Formación con los monaguillos" },
+      {
+        turno: "Tarde",
+        desc: "Formación con los monaguillos",
+        personas: ["Rances Mercado", "Luis Polanco"],
+      },
     ],
     responsables: [
       "C.E. Jesús de la Divina Misericordia y Pastoral de Catequesis (mañana)",
@@ -377,7 +393,12 @@ function renderDia() {
 
   const actividades = d.actividades
     .map(
-      (a) => `<li><span class="badge turno">${a.turno}</span>${a.desc}</li>`
+      (a) =>
+        `<li><span class="badge turno">${a.turno}</span>${a.desc}${
+          a.personas
+            ? ` <span class="rol-nota">a cargo de ${a.personas.map(primerNombre).join(" y ")}</span>`
+            : ""
+        }</li>`
     )
     .join("");
 
@@ -478,6 +499,11 @@ function renderMiTurno() {
   const diasLiturgia = DIAS.filter((d) => d.liturgia.includes(s));
   const diasLector = DIAS.filter((d) => d.lector === s);
   const diasMesa = DIAS.filter((d) => (d.mesa || []).includes(s));
+  const actividadesACargo = DIAS.flatMap((d) =>
+    d.actividades
+      .filter((a) => (a.personas || []).includes(s))
+      .map((a) => ({ dia: d, act: a }))
+  );
 
   const rolesHTML = rolesFijos.length
     ? rolesFijos
@@ -523,6 +549,31 @@ function renderMiTurno() {
       <ul class="lista">${rolesHTML}</ul>
     </div>
 
+    ${
+      actividadesACargo.length
+        ? `<div class="card">
+      <h3>📣 Actividades a mi cargo</h3>
+      <ul class="lista turnos">${actividadesACargo
+        .map(
+          ({ dia, act }) => `<li>
+            <span class="badge turno">${dia.nombre}</span>
+            <strong>${act.desc}</strong>
+            ${
+              act.personas.length > 1
+                ? `<span class="rol-nota">con ${act.personas
+                    .filter((p) => p !== s)
+                    .map(primerNombre)
+                    .join(" y ")}</span>`
+                : ""
+            }
+            <span class="mini-dia">${act.turno}</span>
+          </li>`
+        )
+        .join("")}</ul>
+    </div>`
+        : ""
+    }
+
     <div class="card">
       <h3>🍲 Mis días de cocina</h3>
       <ul class="lista turnos">${turnosDia(diasCocina, "🍲", "Cocina")}</ul>
@@ -560,7 +611,12 @@ function renderMiTurno() {
 function renderCronograma() {
   const filas = DIAS.map((d) => {
     const acts = d.actividades
-      .map((a) => `<div><strong>${a.turno}:</strong> ${a.desc}</div>`)
+      .map(
+        (a) =>
+          `<div><strong>${a.turno}:</strong> ${a.desc}${
+            a.personas ? ` (${a.personas.map(primerNombre).join(" y ")})` : ""
+          }</div>`
+      )
       .join("");
     const resp = d.responsables.map((r) => `<div>${r}</div>`).join("");
     const alim = d.alimentacion.length
