@@ -6,11 +6,15 @@
   <meta name="theme-color" content="#1d3a5f" />
   <title>Censo · San Benito de Palermo</title>
   <link rel="icon" href="img/logo-san-benito.jpg" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="img/icono-apple-180.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Censo SBP" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
-  <link rel="stylesheet" href="styles.css?v=21" />
+  <link rel="stylesheet" crossorigin="anonymous" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
+  <link rel="stylesheet" crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+  <link rel="stylesheet" href="styles.css?v=22" />
 </head>
 <body>
   <header class="appbar">
@@ -27,6 +31,7 @@
   <main>
     <!-- Vista: Casas -->
     <section id="vista-censo" class="vista visible">
+      <div id="aviso-instalar"></div>
       <div id="censo-resumen"></div>
       <div id="censo-aviso-offline"></div>
       <div id="censo-guia"></div>
@@ -90,13 +95,13 @@
     </button>
   </nav>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script crossorigin="anonymous" src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <script src="config.js?v=2"></script>
   <script src="zonas.js?v=3"></script>
   <script src="dipticos.js?v=1"></script>
   <script src="palabra.js?v=2"></script>
-  <script src="censo.js?v=17"></script>
+  <script src="censo.js?v=18"></script>
 </body>
 </html>

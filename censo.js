@@ -28,6 +28,9 @@ const SALUDO_WA =
   "Saludos, le escribimos de la Parroquia San Benito de Palermo 🙏";
 
 const LS_PENDIENTES = "censo_pendientes";
+/* Copia del último censo descargado, para abrir la app sin señal */
+const LS_INSTANTANEA = "censo_instantanea";
+const LS_INSTALAR_OCULTO = "instalar_oculto";
 
 /* Límites de las zonas pastorales (zonas.js, generado desde el KML) */
 const GEO_ZONAS = typeof ZONAS_GEO !== "undefined" ? ZONAS_GEO : [];
@@ -299,6 +302,8 @@ function agregarCapasBase(mapa) {
   const calles = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
     attribution: "© OpenStreetMap",
+    /* con CORS el service worker guarda los mosaicos vistos para usarlos sin señal */
+    crossOrigin: "",
   });
   const satelite = L.tileLayer(
     "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
@@ -428,9 +433,53 @@ async function cargarCenso() {
   censoCargado = true;
 }
 
+/* Fecha de la copia guardada que se está mostrando (sin señal), o null */
+let usandoInstantanea = null;
+
+function guardarInstantanea() {
+  try {
+    localStorage.setItem(
+      LS_INSTANTANEA,
+      JSON.stringify({ fecha: new Date().toISOString(), sectores: sectoresCenso, casas: casasCenso })
+    );
+  } catch {
+    /* sin espacio o almacenamiento bloqueado: solo se pierde el modo sin señal */
+  }
+}
+
+function cargarInstantanea() {
+  try {
+    const copia = JSON.parse(localStorage.getItem(LS_INSTANTANEA) || "null");
+    if (!copia || !Array.isArray(copia.casas)) return false;
+    sectoresCenso = copia.sectores || [];
+    casasCenso = copia.casas;
+    censoCargado = true;
+    usandoInstantanea = copia.fecha;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function mensajeError(e) {
+  return errorDeRed(e) || !sb
+    ? "Sin señal: este cambio necesita conexión. Las casas nuevas sí se pueden registrar sin señal."
+    : e.message;
+}
+
 async function asegurarDatos() {
-  if (!sectoresCenso.length) await cargarSectores();
-  await cargarCenso();
+  try {
+    if (!sb) throw new Error("Failed to fetch: el censo no está conectado");
+    if (!sectoresCenso.length || usandoInstantanea) await cargarSectores();
+    await cargarCenso();
+    usandoInstantanea = null;
+    guardarInstantanea();
+  } catch (e) {
+    if ((errorDeRed(e) || !sb) && cargarInstantanea()) return;
+    throw e;
+  } finally {
+    renderAvisoOffline();
+  }
 }
 
 async function refrescarCenso() {
@@ -438,7 +487,7 @@ async function refrescarCenso() {
     renderSinConfigurar("#censo-lista");
     return;
   }
-  if (!sb) {
+  if (!sb && !cargarInstantanea()) {
     renderSinConexion("#censo-lista");
     return;
   }
@@ -462,7 +511,7 @@ async function refrescarStats() {
     renderSinConfigurar("#stats-contenido");
     return;
   }
-  if (!sb) {
+  if (!sb && !cargarInstantanea()) {
     renderSinConexion("#stats-contenido");
     return;
   }
@@ -480,7 +529,7 @@ async function refrescarStats() {
 
 async function refrescarMapa(opciones = {}) {
   renderMiUbicacion();
-  if (!CENSO_CONFIGURADO || !sb) {
+  if (!CENSO_CONFIGURADO) {
     renderMapa(opciones);
     return;
   }
@@ -524,6 +573,9 @@ function exportarExcel() {
         Latitud: tieneUbicacion(casa) ? casa.lat : "",
         Longitud: tieneUbicacion(casa) ? casa.lng : "",
         "Ubicación (Google Maps)": tieneUbicacion(casa) ? linkVerEnGoogleMaps(casa) : "",
+        "Autorización de la familia": casa.consentimiento
+          ? `Sí (${new Date(casa.consentimiento_en).toLocaleDateString("es-VE")})`
+          : "No registrada",
       };
       if (!casa.personas.length) {
         filas.push({ ...base, Persona: "", Edad: "", Categorías: "", Estado: "", "Notas de la persona": "", "Fecha de registro": "" });
@@ -587,7 +639,12 @@ async function insertarPaquete(paquete) {
 }
 
 async function sincronizarPendientes() {
-  if (!sb) return;
+  if (!sb) {
+    /* la librería del censo no cargó al abrir sin señal: con señal y sin
+       formulario abierto, se recarga la app para conectarse y enviar */
+    if (navigator.onLine && !form.modo && (pendientes().length || usandoInstantanea)) location.reload();
+    return;
+  }
   let cola = pendientes();
   if (!cola.length) return;
   let cambio = false;
@@ -613,11 +670,20 @@ async function sincronizarPendientes() {
 function renderAvisoOffline() {
   const cont = $("#censo-aviso-offline");
   const n = pendientes().length;
+  const copia = usandoInstantanea
+    ? `
+    <div class="aviso-offline">
+      ${icono("wifiNo")}
+      <span><strong>Sin señal.</strong> Estás viendo el censo guardado en este teléfono
+      (${new Date(usandoInstantanea).toLocaleString("es-VE", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}).
+      Las casas nuevas que registres se envían solas al volver la señal.</span>
+    </div>`
+    : "";
   if (!n) {
-    cont.innerHTML = "";
+    cont.innerHTML = copia;
     return;
   }
-  cont.innerHTML = `
+  cont.innerHTML = copia + `
     <div class="aviso-offline">
       ${icono("wifiNo")}
       <span>Hay <strong>${n}</strong> registro${n > 1 ? "s" : ""} guardado${n > 1 ? "s" : ""} en este
@@ -655,6 +721,7 @@ function renderGuiaCenso() {
 
           <h4>🏠 La casa</h4>
           <ul class="lista">
+            <li><strong>Autorización:</strong> ¿Nos permiten guardar estos datos para que la parroquia pueda acompañarlos? (sin su permiso no se registra la casa)</li>
             <li>¿Cuál es el apellido de la familia?</li>
             <li>¿Cuál es la dirección de la casa o un punto de referencia?</li>
             <li>¿Nos regala un número de teléfono (WhatsApp si tiene) para que la parroquia pueda contactarlos?</li>
@@ -780,6 +847,15 @@ function camposCasa(c = {}) {
     </div>`;
 }
 
+function bloqueConsentimiento(c = {}) {
+  return `
+    <label class="consentimiento">
+      <input type="checkbox" class="fc-consentimiento" ${c.consentimiento ? "checked" : ""} />
+      <span><strong>La familia autoriza</strong> que la Parroquia San Benito de Palermo guarde estos datos
+      para su acompañamiento pastoral. *</span>
+    </label>`;
+}
+
 function renderFormulario() {
   const hoja = $("#hoja");
   const panel = $("#censo-form");
@@ -804,7 +880,8 @@ function renderFormulario() {
       <div id="form-personas">${bloquePersona()}</div>
       <button type="button" class="btn btn-suave btn-bloque" data-accion="agregar-bloque">
         ${icono("personaMas")} Agregar otra persona de esta casa
-      </button>`;
+      </button>
+      ${bloqueConsentimiento()}`;
   } else if (form.modo === "agregar-persona") {
     titulo = "Agregar persona";
     cuerpo = `
@@ -818,7 +895,7 @@ function renderFormulario() {
     cuerpo = `<div id="form-personas">${bloquePersona(form.persona)}</div>`;
   } else if (form.modo === "editar-casa") {
     titulo = "Editar casa";
-    cuerpo = camposCasa(form.casa);
+    cuerpo = `${camposCasa(form.casa)}${bloqueConsentimiento(form.casa)}`;
   }
 
   panel.innerHTML = `
@@ -872,8 +949,22 @@ function leerCamposCasa() {
     lat: formUbic ? formUbic.lat : null,
     lng: formUbic ? formUbic.lng : null,
     precision_m: formUbic && formUbic.precision != null ? Math.round(formUbic.precision) : null,
+    ...leerConsentimiento(),
   };
 }
+
+/* Conserva la fecha original si la casa ya tenía la autorización */
+function leerConsentimiento() {
+  const marcado = Boolean($("#censo-form .fc-consentimiento")?.checked);
+  const previa = form.modo === "editar-casa" && form.casa.consentimiento ? form.casa.consentimiento_en : null;
+  return {
+    consentimiento: marcado,
+    consentimiento_en: marcado ? previa || new Date().toISOString() : null,
+  };
+}
+
+const ERROR_CONSENTIMIENTO =
+  "Pide a la familia su autorización y marca la casilla antes de guardar.";
 
 function mostrarErrorForm(msg) {
   const el = $("#censo-form .form-error");
@@ -897,6 +988,7 @@ async function guardarFormulario() {
       const personas = leerBloquesPersona();
       if (!casa.sector_id) return mostrarErrorForm("Elige la zona.");
       if (!casa.direccion) return mostrarErrorForm("Escribe la dirección de la casa.");
+      if (!casa.consentimiento) return mostrarErrorForm(ERROR_CONSENTIMIENTO);
       for (const p of personas) {
         if (!p.nombre) return mostrarErrorForm("Cada persona necesita nombre.");
         if (!p.categorias.length)
@@ -904,9 +996,10 @@ async function guardarFormulario() {
       }
       const paquete = { casa, personas };
       try {
+        if (!sb) throw new Error("Failed to fetch: el censo no está conectado");
         await insertarPaquete(paquete);
       } catch (e) {
-        if (errorDeRed(e)) {
+        if (errorDeRed(e) || !sb) {
           guardarPendientes([...pendientes(), paquete]);
           cerrarFormulario();
           renderAvisoOffline();
@@ -934,6 +1027,7 @@ async function guardarFormulario() {
       const casa = leerCamposCasa();
       if (!casa.sector_id) return mostrarErrorForm("Elige la zona.");
       if (!casa.direccion) return mostrarErrorForm("Escribe la dirección de la casa.");
+      if (!casa.consentimiento) return mostrarErrorForm(ERROR_CONSENTIMIENTO);
       const { error } = await sb.from("casas").update(casa).eq("id", form.casa.id);
       if (error) throw error;
     }
@@ -942,7 +1036,7 @@ async function guardarFormulario() {
     renderLista();
     if (vistaActual === "mapa") renderMapa();
   } catch (e) {
-    mostrarErrorForm(`No se pudo guardar: ${e.message}`);
+    mostrarErrorForm(`No se pudo guardar. ${mensajeError(e)}`);
   } finally {
     const b = $('[data-accion="guardar-form"]');
     if (b) b.disabled = false;
@@ -1298,6 +1392,11 @@ function cardCasa(c) {
               : ""
           }
           ${c.notas ? `<div class="casa-linea">📝 <span>${esc(c.notas)}</span></div>` : ""}
+          ${
+            c.consentimiento
+              ? ""
+              : `<div class="casa-linea ubic-falta">${icono("alerta")}<span>Falta la autorización de la familia (edita la casa para registrarla)</span></div>`
+          }
           ${(() => {
             const otra = zonaDiscrepante(c);
             return otra
@@ -1359,9 +1458,12 @@ function buscarPersona(id) {
 }
 
 async function cambiarEstado(id, estado) {
-  const { error } = await sb.from("personas").update({ estado }).eq("id", id);
+  const { error } = sb
+    ? await sb.from("personas").update({ estado }).eq("id", id)
+    : { error: new Error("Failed to fetch") };
   if (error) {
-    alert(`No se pudo cambiar el estado: ${error.message}`);
+    alert(`No se pudo cambiar el estado. ${mensajeError(error)}`);
+    renderLista();
     return;
   }
   const { persona } = buscarPersona(id);
@@ -1372,10 +1474,11 @@ async function cambiarEstado(id, estado) {
 async function eliminarPersona(id) {
   const { persona } = buscarPersona(id);
   if (!persona) return;
+  if (!sb) return alert(mensajeError(new Error("Failed to fetch")));
   if (!confirm(`¿Quitar a ${persona.nombre} del censo?`)) return;
   const { error } = await sb.from("personas").update({ eliminado: true }).eq("id", id);
   if (error) {
-    alert(`No se pudo eliminar: ${error.message}`);
+    alert(`No se pudo eliminar. ${mensajeError(error)}`);
     return;
   }
   await cargarCenso();
@@ -1385,6 +1488,7 @@ async function eliminarPersona(id) {
 async function eliminarCasa(id) {
   const casa = casasCenso.find((c) => c.id === id);
   if (!casa) return;
+  if (!sb) return alert(mensajeError(new Error("Failed to fetch")));
   const n = casa.personas.length;
   if (
     !confirm(
@@ -1395,7 +1499,7 @@ async function eliminarCasa(id) {
   const r1 = await sb.from("personas").update({ eliminado: true }).eq("casa_id", id);
   const r2 = await sb.from("casas").update({ eliminado: true }).eq("id", id);
   if (r1.error || r2.error) {
-    alert(`No se pudo eliminar: ${(r1.error || r2.error).message}`);
+    alert(`No se pudo eliminar. ${mensajeError(r1.error || r2.error)}`);
     return;
   }
   await cargarCenso();
@@ -2033,8 +2137,8 @@ document.addEventListener("click", (ev) => {
 
   switch (accion) {
     case "abrir-form":
-      if (!sb) {
-        alert("El censo no está conectado. Revisa la señal y recarga la página.");
+      if (!sb && !sectoresCenso.length && !cargarInstantanea()) {
+        alert("Para registrar sin señal, abre la app al menos una vez con conexión.");
         return;
       }
       form = { modo: "nueva-casa" };
@@ -2174,11 +2278,99 @@ document.addEventListener("keydown", (ev) => {
   if (ev.key === "Escape" && form.modo) cerrarFormulario();
 });
 
+/* ---------- Instalar la app (PWA) ---------- */
+
+let eventoInstalar = null;
+
+function enModoApp() {
+  return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+}
+
+function esIOS() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+
+function renderAvisoInstalar() {
+  const cont = $("#aviso-instalar");
+  if (!cont) return;
+  let oculto = false;
+  try {
+    oculto = localStorage.getItem(LS_INSTALAR_OCULTO) === "1";
+  } catch {
+    /* sin almacenamiento: se muestra igual */
+  }
+  if (enModoApp() || oculto || (!eventoInstalar && !esIOS())) {
+    cont.innerHTML = "";
+    return;
+  }
+  cont.innerHTML = `
+    <div class="aviso-instalar">
+      <img src="img/icono-192.png" alt="" width="44" height="44" />
+      <div class="aviso-instalar-texto">
+        <strong>Instala el censo en tu teléfono</strong>
+        <span>${
+          eventoInstalar
+            ? "Queda como una app con el logo de la parroquia y abre aunque no haya señal."
+            : "En Safari toca <strong>Compartir</strong> y luego <strong>Agregar a inicio</strong>. Así abre aunque no haya señal."
+        }</span>
+      </div>
+      <div class="aviso-instalar-botones">
+        ${eventoInstalar ? `<button class="btn btn-acento btn-chip" data-accion="instalar-app">Instalar</button>` : ""}
+        <button class="btn btn-icono" data-accion="ocultar-instalar" aria-label="Ocultar">${icono("cerrar")}</button>
+      </div>
+    </div>`;
+}
+
+window.addEventListener("beforeinstallprompt", (ev) => {
+  ev.preventDefault();
+  eventoInstalar = ev;
+  renderAvisoInstalar();
+});
+
+window.addEventListener("appinstalled", () => {
+  eventoInstalar = null;
+  renderAvisoInstalar();
+  mostrarToast("Listo: el censo quedó instalado en tu teléfono");
+});
+
+document.addEventListener("click", async (ev) => {
+  const el = ev.target.closest('[data-accion="instalar-app"], [data-accion="ocultar-instalar"]');
+  if (!el) return;
+  if (el.dataset.accion === "instalar-app" && eventoInstalar) {
+    eventoInstalar.prompt();
+    await eventoInstalar.userChoice.catch(() => null);
+    eventoInstalar = null;
+  } else if (el.dataset.accion === "ocultar-instalar") {
+    try {
+      localStorage.setItem(LS_INSTALAR_OCULTO, "1");
+    } catch {
+      /* sin almacenamiento: se oculta solo por esta vez */
+    }
+    $("#aviso-instalar").innerHTML = "";
+    return;
+  }
+  renderAvisoInstalar();
+});
+
+/* El service worker guarda la app en el teléfono para abrirla sin señal */
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {
+      /* sin service worker la app funciona igual, solo que no abre sin señal */
+    });
+  });
+}
+
 /* ---------- Inicio ---------- */
 
-window.addEventListener("online", () => {
+window.addEventListener("online", async () => {
   renderEstadoRed();
-  sincronizarPendientes();
+  await sincronizarPendientes();
+  if (usandoInstantanea && sb) {
+    if (vistaActual === "censo") refrescarCenso();
+    else if (vistaActual === "stats") refrescarStats();
+    else if (vistaActual === "mapa") refrescarMapa({ recargar: true });
+  }
 });
 window.addEventListener("offline", renderEstadoRed);
 document.addEventListener("visibilitychange", () => {
@@ -2187,6 +2379,7 @@ document.addEventListener("visibilitychange", () => {
 });
 
 renderEstadoRed();
+renderAvisoInstalar();
 renderGuiaCenso();
 renderAvisoOffline();
 if (sb) sincronizarPendientes();
