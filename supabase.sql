@@ -1,9 +1,10 @@
 -- ============================================================================
--- Censo de la Misión · Parroquia "El Buen Pastor" · Misiones Julio 2026
+-- Censo parroquial · Parroquia "El Buen Pastor"
 -- Pegar este script completo en Supabase → SQL Editor → New query → Run
 -- ============================================================================
 
--- Sectores (editable: agregar el 7mo sector cuando se defina con
+-- Sectores: EDITAR esta lista con los sectores del censo que se va a hacer
+-- (después se agregan más con:
 --   insert into sectores (nombre) values ('Nombre del sector');)
 create table sectores (
   id     serial primary key,

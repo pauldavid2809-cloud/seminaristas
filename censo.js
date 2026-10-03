@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Censo de la Misión · Parroquia "El Buen Pastor"
+   Censo parroquial · Parroquia "El Buen Pastor"
    Registro de casas y personas + estadísticas (Supabase)
    ========================================================================== */
 
@@ -20,13 +20,9 @@ const sb =
     : null;
 
 const SALUDO_WA =
-  "Saludos, le escribo de la Parroquia El Buen Pastor por la visita de las misiones 🙏";
+  "Saludos, le escribimos de la Parroquia El Buen Pastor 🙏";
 
 const LS_PENDIENTES = "censo_pendientes";
-
-/* La misión terminó: ya no se registran casas nuevas, solo se sigue
-   actualizando el seguimiento de lo ya censado */
-const MISION_FINALIZADA = true;
 
 /* ---------- Catálogos ---------- */
 
@@ -107,7 +103,7 @@ function esc(str) {
     .replaceAll("'", "&#39;");
 }
 
-/* El misionero escribe 0412-1234567; se guarda listo para WhatsApp: 584121234567 */
+/* Se escribe 0412-1234567; se guarda listo para WhatsApp: 584121234567 */
 function normalizarTelefono(tel) {
   const digitos = String(tel || "").replace(/\D/g, "");
   if (!digitos) return null;
@@ -141,7 +137,7 @@ function mensajeWhatsApp(persona) {
       ? motivos[0]
       : `${motivos.slice(0, -1).join(", ")} y ${motivos[motivos.length - 1]}`;
 
-  return `Saludos, le escribimos de la Parroquia El Buen Pastor por la visita de las misiones 🙏. Con respecto a ${nombre}, quisiéramos conversar sobre ${listaMotivos}. ¿Podemos coordinar con usted?`;
+  return `Saludos, le escribimos de la Parroquia El Buen Pastor 🙏. Con respecto a ${nombre}, quisiéramos conversar sobre ${listaMotivos}. ¿Podemos coordinar con usted?`;
 }
 
 function fechaCorta(iso) {
@@ -311,7 +307,7 @@ function exportarExcel() {
   });
 
   const fecha = new Date().toISOString().slice(0, 10);
-  XLSX.writeFile(libro, `censo-mision-${fecha}.xlsx`);
+  XLSX.writeFile(libro, `censo-${fecha}.xlsx`);
 }
 
 /* ---------- Cola offline (solo registros nuevos) ---------- */
@@ -383,18 +379,6 @@ function renderAvisoOffline() {
     </div>`;
 }
 
-function renderAvisoMision() {
-  const cont = document.querySelector("#censo-aviso-mision");
-  if (!cont) return;
-  cont.innerHTML = MISION_FINALIZADA
-    ? `
-    <div class="aviso-cierre">
-      🏁 La misión ha finalizado. El censo queda abierto para consultar y actualizar el
-      seguimiento de los casos ya registrados; ya no se registran casas nuevas.
-    </div>`
-    : "";
-}
-
 /* ---------- Guía de preguntas para la visita ---------- */
 
 function renderGuiaCenso() {
@@ -405,9 +389,8 @@ function renderGuiaCenso() {
       <details>
         <summary>❓ Preguntas para llenar el censo</summary>
         <p class="mini-dia guia-intro">
-          Al llegar, preséntate: «Buenas, somos seminaristas misioneros de la
-          Parroquia El Buen Pastor y estamos visitando las casas del sector».
-          Luego pregunta:
+          Al llegar, preséntate: «Buenas, venimos de la Parroquia El Buen
+          Pastor y estamos visitando las casas del sector». Luego pregunta:
         </p>
 
         <h4>🏠 La casa</h4>
@@ -523,14 +506,12 @@ function renderFormulario() {
   const cont = document.querySelector("#censo-form");
 
   if (!form.modo) {
-    cont.innerHTML = MISION_FINALIZADA
-      ? `
-      <button class="btn-principal btn-registrar" data-accion="exportar-excel">
-        📊 Exportar Excel por sector
-      </button>`
-      : `
+    cont.innerHTML = `
       <button class="btn-principal btn-registrar" data-accion="abrir-form">
         ➕ Registrar casa / visita
+      </button>
+      <button class="btn-secundario btn-registrar" data-accion="exportar-excel">
+        📊 Exportar Excel por sector
       </button>`;
     return;
   }
@@ -913,7 +894,7 @@ function renderStats() {
   const encabezadoImpresion = `
     <div class="stats-print-header">
       <h1>Parroquia "El Buen Pastor" · Arquidiócesis de Maracaibo</h1>
-      <p>Estadísticas de la Misión${nombreSectorActivo ? ` · Sector: ${esc(nombreSectorActivo)}` : " · Todos los sectores"}</p>
+      <p>Estadísticas del censo${nombreSectorActivo ? ` · Sector: ${esc(nombreSectorActivo)}` : " · Todos los sectores"}</p>
       <p>Generado el ${new Date().toLocaleDateString("es-VE", { day: "numeric", month: "long", year: "numeric" })}</p>
     </div>`;
 
@@ -969,7 +950,7 @@ function renderStats() {
     ${selector}
     ${encabezadoImpresion}
     <div class="card dia-encabezado">
-      <h2>📊 Estadísticas${nombreSectorActivo ? ` · ${esc(nombreSectorActivo)}` : " de la misión"}</h2>
+      <h2>📊 Estadísticas${nombreSectorActivo ? ` · ${esc(nombreSectorActivo)}` : " del censo"}</h2>
       <p class="dia-titulo">${total} persona${total !== 1 ? "s" : ""} censada${total !== 1 ? "s" : ""} · ${totalCasas} casa${totalCasas !== 1 ? "s" : ""} visitada${totalCasas !== 1 ? "s" : ""}</p>
       <div class="stats-estados">
         <span class="badge ${ESTADOS.pendiente.clase}">Pendientes: ${porEstado.pendiente}</span>
@@ -1027,7 +1008,7 @@ function renderStats() {
           </tbody>
         </table>
       </div>
-      <p class="mini-dia">La vista clave para organizar el seguimiento de la parroquia después de la misión.</p>
+      <p class="mini-dia">La vista clave para organizar el seguimiento de la parroquia.</p>
     </div>
 
     <div class="stats-botones no-imprimir">
@@ -1167,5 +1148,4 @@ document.querySelectorAll(".tab").forEach((tab) => {
 window.addEventListener("online", sincronizarPendientes);
 if (sb) sincronizarPendientes();
 renderAvisoOffline();
-renderAvisoMision();
 refrescarCenso();
