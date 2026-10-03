@@ -465,7 +465,7 @@ const ZONAS_GEO = [
   },
   {
     "nombre": "Zona 3",
-    "santo": "Beato José Gregorio Hernández",
+    "santo": "San José Gregorio Hernández",
     "color": "#f4a020",
     "poligono": [
       [
