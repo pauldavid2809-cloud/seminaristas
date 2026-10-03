@@ -2,33 +2,49 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#122940" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#1d3a5f" />
   <title>Censo · San Benito de Palermo</title>
-  <link rel="stylesheet" href="styles.css?v=11" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+  <link rel="stylesheet" href="styles.css?v=13" />
 </head>
 <body>
-  <header class="cabecera">
-    <div class="cabecera-texto">
-      <p class="sobretitulo">Arquidiócesis de Maracaibo · Parroquia "San Benito de Palermo"</p>
-      <h1>Censo parroquial</h1>
-      <p class="subtitulo">Registro de casas y personas por zona</p>
+  <header class="appbar">
+    <div class="appbar-marca">
+      <span class="appbar-logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M10.5 2h3v6h6v3h-6v11h-3V11h-6V8h6z" /></svg>
+      </span>
+      <div>
+        <p class="appbar-sobre">Parroquia San Benito de Palermo</p>
+        <h1 class="appbar-titulo">Censo parroquial</h1>
+      </div>
     </div>
+    <span id="estado-red" class="estado-red" title="Conexión"></span>
   </header>
 
-  <nav class="tabs" aria-label="Secciones">
-    <button class="tab activo" data-vista="censo">📋<span>Censo</span></button>
-    <button class="tab" data-vista="stats">📊<span>Stats</span></button>
-  </nav>
-
   <main>
-    <!-- Vista: Censo -->
+    <!-- Vista: Casas -->
     <section id="vista-censo" class="vista visible">
+      <div id="censo-resumen"></div>
       <div id="censo-aviso-offline"></div>
       <div id="censo-guia"></div>
-      <div id="censo-form"></div>
       <div id="censo-filtros"></div>
       <div id="censo-lista"></div>
+    </section>
+
+    <!-- Vista: Mapa -->
+    <section id="vista-mapa" class="vista">
+      <div id="mapa-barra"></div>
+      <div class="mapa-marco">
+        <div id="mapa-general" class="mapa-general"></div>
+        <button class="mapa-btn-yo" data-accion="mapa-centrarme" title="Centrar en mi ubicación" aria-label="Centrar en mi ubicación">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" /><circle cx="12" cy="12" r="7.5" fill="none" /></svg>
+        </button>
+      </div>
+      <div id="mapa-pie"></div>
     </section>
 
     <!-- Vista: Estadísticas -->
@@ -37,9 +53,36 @@
     </section>
   </main>
 
+  <button id="fab" class="fab" data-accion="abrir-form">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+    <span>Registrar casa</span>
+  </button>
+
+  <!-- Hoja deslizable del formulario -->
+  <div id="hoja" class="hoja" hidden>
+    <div class="hoja-fondo" data-accion="cerrar-form"></div>
+    <div id="censo-form" class="hoja-panel" role="dialog" aria-modal="true"></div>
+  </div>
+
+  <nav class="tabs" aria-label="Secciones">
+    <button class="tab activo" data-vista="censo">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5" /><path d="M5.5 9.5V20h13V9.5" /><path d="M10 20v-5.5h4V20" /></svg>
+      <span>Casas</span>
+    </button>
+    <button class="tab" data-vista="mapa">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z" /><circle cx="12" cy="10" r="2.4" /></svg>
+      <span>Mapa</span>
+    </button>
+    <button class="tab" data-vista="stats">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></svg>
+      <span>Stats</span>
+    </button>
+  </nav>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <script src="config.js?v=2"></script>
-  <script src="censo.js?v=10"></script>
+  <script src="censo.js?v=12"></script>
 </body>
 </html>

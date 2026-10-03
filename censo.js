@@ -1,6 +1,7 @@
 /* ==========================================================================
    Censo parroquial · Parroquia "San Benito de Palermo"
-   Registro de casas y personas por zona + estadísticas (Supabase)
+   Registro de casas y personas por zona, con ubicación GPS, mapa y
+   estadísticas (Supabase + Leaflet)
    (la tabla "sectores" de la base de datos guarda las zonas)
    ========================================================================== */
 
@@ -13,17 +14,28 @@ const CENSO_CONFIGURADO =
   SUPABASE_URL.startsWith("https://") &&
   !SUPABASE_URL.includes("PEGAR");
 
-/* window.supabase puede faltar si el CDN no cargó (sin señal): el resto de la
-   pestaña (la guía de preguntas) debe funcionar igual */
+/* window.supabase puede faltar si el CDN no cargó (sin señal): la guía de
+   preguntas y el resto de la interfaz deben funcionar igual */
 const sb =
   CENSO_CONFIGURADO && window.supabase
     ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
     : null;
 
+/* Leaflet (mapas) también viene de un CDN y puede faltar sin señal */
+const HAY_MAPAS = typeof window.L !== "undefined";
+
 const SALUDO_WA =
   "Saludos, le escribimos de la Parroquia San Benito de Palermo 🙏";
 
 const LS_PENDIENTES = "censo_pendientes";
+
+/* Centro por defecto de los mapas mientras no haya casas con ubicación */
+const CENTRO_MARACAIBO = [10.6427, -71.6125];
+
+/* Precisión (en metros) a partir de la cual se deja de afinar el GPS */
+const GPS_PRECISION_BUENA = 20;
+const GPS_PRECISION_DUDOSA = 50;
+const GPS_ESPERA_MS = 15000;
 
 /* ---------- Catálogos ---------- */
 
@@ -89,11 +101,54 @@ const ESTADOS = {
   atendido: { etiqueta: "Atendido", clase: "est-atendido" },
 };
 
+/* Un color por zona, en el orden en que se listan (Zona 1 … Zona 8) */
+const COLORES_ZONA = [
+  "#2563eb",
+  "#d97706",
+  "#059669",
+  "#db2777",
+  "#7c3aed",
+  "#0891b2",
+  "#dc2626",
+  "#65a30d",
+];
+
 function catInfo(slug) {
   return CATEGORIAS.find((c) => c.slug === slug) || { etiqueta: slug, emoji: "" };
 }
 
+/* ---------- Íconos (trazos SVG) ---------- */
+
+const ICONOS = {
+  pin: '<path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.4"/>',
+  tel: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/>',
+  editar: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>',
+  borrar: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+  personaMas: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M19 8v6M16 11h6"/>',
+  ruta: '<path d="M3 11 21 3l-8 18-2-8z"/>',
+  cerrar: '<path d="M6 6l12 12M18 6 6 18"/>',
+  buscar: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  recargar: '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/>',
+  descargar: '<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>',
+  gps: '<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>',
+  cargando: '<path d="M12 3a9 9 0 1 0 9 9"/>',
+  check: '<path d="m5 12 5 5L20 7"/>',
+  alerta: '<path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17v.5"/>',
+  mapa: '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>',
+  imprimir: '<path d="M6 9V3h12v6M6 18H4v-7h16v7h-2M8 14h8v7H8z"/>',
+  casa: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/>',
+  persona: '<circle cx="12" cy="8" r="3.8"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/>',
+  mas: '<path d="M12 5v14M5 12h14"/>',
+  wifiNo: '<path d="M2 8.5a15 15 0 0 1 5-3M22 8.5A15 15 0 0 0 12 5M5.5 12a10 10 0 0 1 3-2M18.5 12a10 10 0 0 0-4-2.3M9 15.5a5 5 0 0 1 6 0M12 19.5v.5M3 3l18 18"/>',
+};
+
+function icono(nombre, clase = "") {
+  return `<svg viewBox="0 0 24 24" aria-hidden="true"${clase ? ` class="${clase}"` : ""}>${ICONOS[nombre]}</svg>`;
+}
+
 /* ---------- Utilidades ---------- */
+
+const $ = (sel) => document.querySelector(sel);
 
 function esc(str) {
   return String(str ?? "")
@@ -102,6 +157,10 @@ function esc(str) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+function plural(n, singular, pluralTxt = singular + "s") {
+  return `${n} ${n === 1 ? singular : pluralTxt}`;
 }
 
 /* Se escribe 0412-1234567; se guarda listo para WhatsApp: 584121234567 */
@@ -156,6 +215,53 @@ function errorDeRed(error) {
   return !navigator.onLine || /fetch|network|failed/i.test(error?.message || "");
 }
 
+/* ---------- Ubicación: utilidades ---------- */
+
+function tieneUbicacion(casa) {
+  return casa.lat != null && casa.lng != null;
+}
+
+function linkComoLlegar(casa) {
+  return `https://www.google.com/maps/dir/?api=1&destination=${casa.lat},${casa.lng}`;
+}
+
+function linkVerEnGoogleMaps(casa) {
+  return `https://www.google.com/maps?q=${casa.lat},${casa.lng}`;
+}
+
+function colorZona(sectorId) {
+  const i = sectoresCenso.findIndex((s) => s.id === sectorId);
+  return COLORES_ZONA[(i < 0 ? 0 : i) % COLORES_ZONA.length];
+}
+
+function puntoZona(sectorId) {
+  return `<span class="zona-punto" style="background:${colorZona(sectorId)}"></span>`;
+}
+
+/* Centro de las casas ya ubicadas: así un mapa nuevo abre en la parroquia */
+function centroCenso() {
+  const ubicadas = casasCenso.filter(tieneUbicacion);
+  if (!ubicadas.length) return null;
+  const lat = ubicadas.reduce((s, c) => s + c.lat, 0) / ubicadas.length;
+  const lng = ubicadas.reduce((s, c) => s + c.lng, 0) / ubicadas.length;
+  return [lat, lng];
+}
+
+/* Capas base: calles (OpenStreetMap) y satélite (Esri), para reconocer
+   la casa desde arriba en los barrios */
+function agregarCapasBase(mapa) {
+  const calles = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "© OpenStreetMap",
+  });
+  const satelite = L.tileLayer(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    { maxZoom: 19, attribution: "© Esri" }
+  );
+  calles.addTo(mapa);
+  L.control.layers({ Calles: calles, Satélite: satelite }, null, { position: "topright" }).addTo(mapa);
+}
+
 /* ---------- Estado del módulo ---------- */
 
 let sectoresCenso = [];
@@ -166,6 +272,15 @@ const filtros = { texto: "", categoria: "", sector: "", estado: "" };
 
 /* Formulario: modo = null | "nueva-casa" | "agregar-persona" | "editar-persona" | "editar-casa" */
 let form = { modo: null, casa: null, persona: null };
+
+/* Ubicación que se está editando en el formulario: { lat, lng, precision } */
+let formUbic = null;
+let gpsWatchId = null;
+let gpsTemporizador = null;
+let mapaForm = null;
+let pinForm = null;
+
+let vistaActual = "censo";
 
 /* ---------- Datos ---------- */
 
@@ -207,6 +322,11 @@ async function cargarCenso() {
   censoCargado = true;
 }
 
+async function asegurarDatos() {
+  if (!sectoresCenso.length) await cargarSectores();
+  await cargarCenso();
+}
+
 async function refrescarCenso() {
   if (!CENSO_CONFIGURADO) {
     renderSinConfigurar("#censo-lista");
@@ -216,19 +336,17 @@ async function refrescarCenso() {
     renderSinConexion("#censo-lista");
     return;
   }
-  const cont = document.querySelector("#censo-lista");
+  const cont = $("#censo-lista");
   if (!censoCargado) cont.innerHTML = `<div class="card vacio-card">Cargando el censo…</div>`;
   try {
-    if (!sectoresCenso.length) await cargarSectores();
-    await cargarCenso();
-    renderFormulario();
+    await asegurarDatos();
     renderFiltros();
     renderLista();
     sincronizarPendientes();
   } catch (e) {
-    cont.innerHTML = `<div class="card vacio-card">⚠️ No se pudo cargar el censo.<br><span class="mini-dia">${esc(
+    cont.innerHTML = `<div class="card vacio-card">⚠️ No se pudo cargar el censo.<span class="texto-suave">${esc(
       e.message
-    )}</span><br><button class="btn-secundario" data-accion="reintentar-carga">🔄 Reintentar</button></div>`;
+    )}</span><br><button class="btn btn-secundario" data-accion="reintentar-carga">${icono("recargar")} Reintentar</button></div>`;
   }
   renderAvisoOffline();
 }
@@ -242,17 +360,29 @@ async function refrescarStats() {
     renderSinConexion("#stats-contenido");
     return;
   }
-  const cont = document.querySelector("#stats-contenido");
+  const cont = $("#stats-contenido");
   if (!censoCargado) cont.innerHTML = `<div class="card vacio-card">Cargando estadísticas…</div>`;
   try {
-    if (!sectoresCenso.length) await cargarSectores();
-    await cargarCenso();
+    await asegurarDatos();
     renderStats();
   } catch (e) {
-    cont.innerHTML = `<div class="card vacio-card">⚠️ No se pudieron cargar las estadísticas.<br><span class="mini-dia">${esc(
+    cont.innerHTML = `<div class="card vacio-card">⚠️ No se pudieron cargar las estadísticas.<span class="texto-suave">${esc(
       e.message
     )}</span></div>`;
   }
+}
+
+async function refrescarMapa(opciones = {}) {
+  if (!CENSO_CONFIGURADO || !sb) {
+    renderMapa(opciones);
+    return;
+  }
+  try {
+    if (!censoCargado || opciones.recargar) await asegurarDatos();
+  } catch (e) {
+    /* sin datos frescos: se muestra lo que haya en memoria */
+  }
+  renderMapa(opciones);
 }
 
 /* ---------- Exportar a Excel (una hoja por zona) ---------- */
@@ -271,7 +401,7 @@ function exportarExcel() {
 
   const libro = XLSX.utils.book_new();
   const sectoresOrdenados = [...sectoresCenso].sort((a, b) =>
-    a.nombre.localeCompare(b.nombre)
+    a.nombre.localeCompare(b.nombre, "es", { numeric: true })
   );
 
   sectoresOrdenados.forEach((sector) => {
@@ -283,6 +413,9 @@ function exportarExcel() {
         Dirección: casa.direccion,
         Teléfono: formatoLocal(casa.telefono),
         "Notas de la casa": casa.notas || "",
+        Latitud: tieneUbicacion(casa) ? casa.lat : "",
+        Longitud: tieneUbicacion(casa) ? casa.lng : "",
+        "Ubicación (Google Maps)": tieneUbicacion(casa) ? linkVerEnGoogleMaps(casa) : "",
       };
       if (!casa.personas.length) {
         filas.push({ ...base, Persona: "", Edad: "", Categorías: "", Estado: "", "Notas de la persona": "", "Fecha de registro": "" });
@@ -308,7 +441,7 @@ function exportarExcel() {
   });
 
   const fecha = new Date().toISOString().slice(0, 10);
-  XLSX.writeFile(libro, `censo-${fecha}.xlsx`);
+  XLSX.writeFile(libro, `censo-san-benito-${fecha}.xlsx`);
 }
 
 /* ---------- Cola offline (solo registros nuevos) ---------- */
@@ -322,7 +455,11 @@ function pendientes() {
 }
 
 function guardarPendientes(lista) {
-  localStorage.setItem(LS_PENDIENTES, JSON.stringify(lista));
+  try {
+    localStorage.setItem(LS_PENDIENTES, JSON.stringify(lista));
+  } catch {
+    /* almacenamiento bloqueado: no hay dónde guardar la cola */
+  }
 }
 
 async function insertarPaquete(paquete) {
@@ -366,7 +503,7 @@ async function sincronizarPendientes() {
 }
 
 function renderAvisoOffline() {
-  const cont = document.querySelector("#censo-aviso-offline");
+  const cont = $("#censo-aviso-offline");
   const n = pendientes().length;
   if (!n) {
     cont.innerHTML = "";
@@ -374,58 +511,71 @@ function renderAvisoOffline() {
   }
   cont.innerHTML = `
     <div class="aviso-offline">
-      📶 Hay <strong>${n}</strong> registro${n > 1 ? "s" : ""} guardado${n > 1 ? "s" : ""} en este
-      teléfono esperando señal.
-      <button class="btn-secundario" data-accion="sincronizar">🔄 Enviar ahora</button>
+      ${icono("wifiNo")}
+      <span>Hay <strong>${n}</strong> registro${n > 1 ? "s" : ""} guardado${n > 1 ? "s" : ""} en este
+      teléfono esperando señal.</span>
+      <button class="btn btn-secundario btn-chip" data-accion="sincronizar">${icono("recargar")} Enviar ahora</button>
     </div>`;
+}
+
+function renderEstadoRed() {
+  const el = $("#estado-red");
+  const enLinea = navigator.onLine;
+  el.classList.toggle("sin-red", !enLinea);
+  el.textContent = enLinea ? "En línea" : "Sin señal";
 }
 
 /* ---------- Guía de preguntas para la visita ---------- */
 
 function renderGuiaCenso() {
-  const cont = document.querySelector("#censo-guia");
+  const cont = $("#censo-guia");
   if (!cont) return;
   cont.innerHTML = `
     <div class="card guia-censo">
       <details>
-        <summary>❓ Preguntas para llenar el censo</summary>
-        <p class="mini-dia guia-intro">
-          Al llegar, preséntate: «Buenas, venimos de la Parroquia San Benito
-          de Palermo y estamos visitando las casas de la zona». Luego pregunta:
-        </p>
+        <summary><span class="guia-icono">❓</span>Preguntas para llenar el censo</summary>
+        <div class="guia-cuerpo">
+          <p class="texto-suave">
+            Al llegar, preséntate: «Buenas, venimos de la Parroquia San Benito
+            de Palermo y estamos visitando las casas de la zona». Luego pregunta:
+          </p>
 
-        <h4>🏠 La casa</h4>
-        <ul class="lista">
-          <li>¿Cuál es el apellido de la familia?</li>
-          <li>¿Cuál es la dirección de la casa o un punto de referencia?</li>
-          <li>¿Nos regala un número de teléfono (WhatsApp si tiene) para que la parroquia pueda contactarlos?</li>
-        </ul>
+          <h4>📍 Ubicación</h4>
+          <ul class="lista">
+            <li>Párate frente a la puerta de la casa y toca <strong>Usar mi GPS</strong>. Si el punto no quedó exacto, arrastra el pin en el mapa.</li>
+          </ul>
 
-        <h4>👤 Por cada persona a registrar</h4>
-        <ul class="lista">
-          <li>¿Cuál es su nombre y apellido?</li>
-          <li>¿Qué edad tiene?</li>
-        </ul>
+          <h4>🏠 La casa</h4>
+          <ul class="lista">
+            <li>¿Cuál es el apellido de la familia?</li>
+            <li>¿Cuál es la dirección de la casa o un punto de referencia?</li>
+            <li>¿Nos regala un número de teléfono (WhatsApp si tiene) para que la parroquia pueda contactarlos?</li>
+          </ul>
 
-        <h4>✅ Para marcar sus categorías</h4>
-        <ul class="lista">
-          ${CATEGORIAS.map(
-            (c) => `<li>${c.emoji} <strong>${esc(c.etiqueta)}</strong>: ${esc(c.pregunta)}</li>`
-          ).join("")}
-        </ul>
+          <h4>👤 Por cada persona a registrar</h4>
+          <ul class="lista">
+            <li>¿Cuál es su nombre y apellido?</li>
+            <li>¿Qué edad tiene?</li>
+          </ul>
 
-        <h4>📝 Para las notas</h4>
-        <ul class="lista">
-          <li>¿Algo más que la parroquia deba saber para acompañarlos? (horarios en que se les consigue, situación particular de la persona…)</li>
-          <li>Antes de despedirte: ¿podemos hacer una breve oración con ustedes?</li>
-        </ul>
+          <h4>✅ Para marcar sus categorías</h4>
+          <ul class="lista">
+            ${CATEGORIAS.map(
+              (c) => `<li>${c.emoji} <strong>${esc(c.etiqueta)}</strong>: ${esc(c.pregunta)}</li>`
+            ).join("")}
+          </ul>
+
+          <h4>📝 Para las notas</h4>
+          <ul class="lista">
+            <li>¿Algo más que la parroquia deba saber para acompañarlos? (horarios en que se les consigue, situación particular de la persona…)</li>
+            <li>Antes de despedirte: ¿podemos hacer una breve oración con ustedes?</li>
+          </ul>
+        </div>
       </details>
     </div>`;
 }
 
-renderGuiaCenso();
-
-/* ---------- Formulario ---------- */
+/* ---------- Formulario (hoja deslizable) ---------- */
 
 function opcionesSectores(seleccionado) {
   return sectoresCenso
@@ -448,21 +598,23 @@ function chipsCategorias(activas = []) {
 
 function bloquePersona(p = {}, quitable = false) {
   return `
-    <div class="form-persona">
+    <div class="form-seccion form-persona">
       <div class="form-persona-cab">
-        <strong>👤 Persona</strong>
-        ${quitable ? `<button type="button" class="btn-quitar" data-accion="quitar-bloque">✕ Quitar</button>` : ""}
+        <span class="form-seccion-titulo">${icono("persona")} Persona</span>
+        ${quitable ? `<button type="button" class="btn-quitar" data-accion="quitar-bloque">Quitar</button>` : ""}
+      </div>
+      <div class="form-fila">
+        <div class="form-campo" style="flex:3">
+          <label>Nombre y apellido *</label>
+          <input type="text" class="fp-nombre" value="${esc(p.nombre || "")}" placeholder="María Pérez" autocomplete="off" />
+        </div>
+        <div class="form-campo" style="flex:1">
+          <label>Edad</label>
+          <input type="number" class="fp-edad" inputmode="numeric" min="0" max="120" value="${p.edad ?? ""}" placeholder="10" />
+        </div>
       </div>
       <div class="form-campo">
-        <label>Nombre y apellido *</label>
-        <input type="text" class="fp-nombre" value="${esc(p.nombre || "")}" placeholder="María Pérez" />
-      </div>
-      <div class="form-campo">
-        <label>Edad</label>
-        <input type="number" class="fp-edad" min="0" max="120" value="${p.edad ?? ""}" placeholder="10" />
-      </div>
-      <div class="form-campo">
-        <label>Categorías * <span class="mini-dia">(puede marcar varias)</span></label>
+        <label>Categorías * <span class="texto-suave" style="display:inline">(puede marcar varias)</span></label>
         <div class="cat-chips">${chipsCategorias(p.categorias || [])}</div>
       </div>
       <div class="form-campo">
@@ -472,25 +624,41 @@ function bloquePersona(p = {}, quitable = false) {
     </div>`;
 }
 
+function seccionUbicacion() {
+  return `
+    <div class="form-seccion">
+      <span class="form-seccion-titulo">${icono("pin")} Ubicación de la casa</span>
+      <div id="ubic-estado" class="ubic-estado"></div>
+      <div id="form-mapa" class="form-mapa"></div>
+      <div class="ubic-botones">
+        <button type="button" class="btn btn-suave" data-accion="capturar-ubicacion">${icono("gps")} Usar mi GPS</button>
+        <button type="button" class="btn btn-secundario" data-accion="quitar-ubicacion">Quitar</button>
+      </div>
+      <p class="ayuda">Párate frente a la puerta. Si el punto no quedó exacto, arrastra el pin o toca el mapa donde está la casa.</p>
+    </div>`;
+}
+
 function camposCasa(c = {}) {
   return `
-    <div class="form-casa">
+    ${seccionUbicacion()}
+    <div class="form-seccion">
+      <span class="form-seccion-titulo">${icono("casa")} La casa</span>
       <div class="form-fila">
         <div class="form-campo">
           <label>Zona *</label>
           <select class="fc-sector">
-            <option value="">— Elegir —</option>
+            <option value="">Elegir</option>
             ${opcionesSectores(c.sector_id)}
           </select>
         </div>
         <div class="form-campo">
-          <label>Familia (apellido)</label>
-          <input type="text" class="fc-familia" value="${esc(c.familia || "")}" placeholder="Familia Pérez" />
+          <label>Familia</label>
+          <input type="text" class="fc-familia" value="${esc(c.familia || "")}" placeholder="Familia Pérez" autocomplete="off" />
         </div>
       </div>
       <div class="form-campo">
         <label>Dirección *</label>
-        <input type="text" class="fc-direccion" value="${esc(c.direccion || "")}" placeholder="Calle, casa, punto de referencia" />
+        <input type="text" class="fc-direccion" value="${esc(c.direccion || "")}" placeholder="Calle, casa, punto de referencia" autocomplete="off" />
       </div>
       <div class="form-campo">
         <label>Teléfono de la casa</label>
@@ -504,56 +672,73 @@ function camposCasa(c = {}) {
 }
 
 function renderFormulario() {
-  const cont = document.querySelector("#censo-form");
+  const hoja = $("#hoja");
+  const panel = $("#censo-form");
 
   if (!form.modo) {
-    cont.innerHTML = `
-      <button class="btn-principal btn-registrar" data-accion="abrir-form">
-        ➕ Registrar casa / visita
-      </button>
-      <button class="btn-secundario btn-registrar" data-accion="exportar-excel">
-        📊 Exportar Excel por zona
-      </button>`;
+    detenerGPS();
+    destruirMapaForm();
+    hoja.hidden = true;
+    panel.innerHTML = "";
+    document.body.classList.remove("hoja-abierta");
     return;
   }
 
   let titulo = "";
   let cuerpo = "";
+  const conCasa = form.modo === "nueva-casa" || form.modo === "editar-casa";
+
   if (form.modo === "nueva-casa") {
-    titulo = "➕ Registrar casa / visita";
+    titulo = "Registrar casa";
     cuerpo = `
       ${camposCasa()}
       <div id="form-personas">${bloquePersona()}</div>
-      <button type="button" class="btn-secundario" data-accion="agregar-bloque">
-        ➕ Agregar otra persona de esta casa
+      <button type="button" class="btn btn-suave btn-bloque" data-accion="agregar-bloque">
+        ${icono("personaMas")} Agregar otra persona de esta casa
       </button>`;
   } else if (form.modo === "agregar-persona") {
-    titulo = `➕ Agregar persona`;
+    titulo = "Agregar persona";
     cuerpo = `
-      <p class="mini-dia form-contexto">🏠 ${esc(form.casa.familia || form.casa.direccion)} · ${esc(form.casa.sector)}</p>
+      <p class="form-contexto">${puntoZona(form.casa.sector_id)} ${esc(form.casa.familia || form.casa.direccion)} · ${esc(form.casa.sector)}</p>
       <div id="form-personas">${bloquePersona()}</div>
-      <button type="button" class="btn-secundario" data-accion="agregar-bloque">
-        ➕ Agregar otra persona de esta casa
+      <button type="button" class="btn btn-suave btn-bloque" data-accion="agregar-bloque">
+        ${icono("personaMas")} Agregar otra persona de esta casa
       </button>`;
   } else if (form.modo === "editar-persona") {
-    titulo = `✏️ Editar a ${esc(form.persona.nombre)}`;
+    titulo = `Editar a ${esc(form.persona.nombre)}`;
     cuerpo = `<div id="form-personas">${bloquePersona(form.persona)}</div>`;
   } else if (form.modo === "editar-casa") {
-    titulo = `✏️ Editar casa`;
+    titulo = "Editar casa";
     cuerpo = camposCasa(form.casa);
   }
 
-  cont.innerHTML = `
-    <div class="card form-censo">
-      <h3>${titulo}</h3>
+  panel.innerHTML = `
+    <div class="hoja-cab">
+      <h2>${titulo}</h2>
+      <button type="button" class="btn btn-icono" data-accion="cerrar-form" aria-label="Cerrar">${icono("cerrar")}</button>
+    </div>
+    <div class="hoja-cuerpo">
       ${cuerpo}
       <p class="form-error" hidden></p>
-      <div class="form-acciones">
-        <button type="button" class="btn-principal" data-accion="guardar-form">💾 Guardar</button>
-        <button type="button" class="btn-secundario" data-accion="cerrar-form">Cancelar</button>
-      </div>
+    </div>
+    <div class="hoja-pie">
+      <button type="button" class="btn btn-secundario" data-accion="cerrar-form">Cancelar</button>
+      <button type="button" class="btn btn-principal" data-accion="guardar-form">${icono("check")} Guardar</button>
     </div>`;
-  cont.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  hoja.hidden = false;
+  document.body.classList.add("hoja-abierta");
+
+  if (conCasa) {
+    formUbic =
+      form.modo === "editar-casa" && tieneUbicacion(form.casa)
+        ? { lat: form.casa.lat, lng: form.casa.lng, precision: form.casa.precision_m }
+        : null;
+    pintarEstadoUbic();
+    /* el mapa se crea cuando la hoja ya tiene su tamaño final */
+    setTimeout(iniciarMapaForm, 60);
+    if (form.modo === "nueva-casa") capturarUbicacion();
+  }
 }
 
 function leerBloquesPersona() {
@@ -566,24 +751,34 @@ function leerBloquesPersona() {
 }
 
 function leerCamposCasa() {
-  const f = document.querySelector("#censo-form");
+  const f = $("#censo-form");
   return {
     sector_id: Number(f.querySelector(".fc-sector").value) || null,
     familia: f.querySelector(".fc-familia").value.trim() || null,
     direccion: f.querySelector(".fc-direccion").value.trim(),
     telefono: normalizarTelefono(f.querySelector(".fc-telefono").value),
     notas: f.querySelector(".fc-notas").value.trim() || null,
+    lat: formUbic ? formUbic.lat : null,
+    lng: formUbic ? formUbic.lng : null,
+    precision_m: formUbic && formUbic.precision != null ? Math.round(formUbic.precision) : null,
   };
 }
 
 function mostrarErrorForm(msg) {
-  const el = document.querySelector("#censo-form .form-error");
+  const el = $("#censo-form .form-error");
   el.textContent = msg;
   el.hidden = false;
+  el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function cerrarFormulario() {
+  form = { modo: null };
+  formUbic = null;
+  renderFormulario();
 }
 
 async function guardarFormulario() {
-  const boton = document.querySelector('[data-accion="guardar-form"]');
+  const boton = $('[data-accion="guardar-form"]');
   boton.disabled = true;
   try {
     if (form.modo === "nueva-casa") {
@@ -602,8 +797,7 @@ async function guardarFormulario() {
       } catch (e) {
         if (errorDeRed(e)) {
           guardarPendientes([...pendientes(), paquete]);
-          form = { modo: null };
-          renderFormulario();
+          cerrarFormulario();
           renderAvisoOffline();
           return;
         }
@@ -632,26 +826,192 @@ async function guardarFormulario() {
       const { error } = await sb.from("casas").update(casa).eq("id", form.casa.id);
       if (error) throw error;
     }
-    form = { modo: null };
+    cerrarFormulario();
     await cargarCenso();
-    renderFormulario();
     renderLista();
+    if (vistaActual === "mapa") renderMapa();
   } catch (e) {
     mostrarErrorForm(`No se pudo guardar: ${e.message}`);
   } finally {
-    const b = document.querySelector('[data-accion="guardar-form"]');
+    const b = $('[data-accion="guardar-form"]');
     if (b) b.disabled = false;
   }
 }
 
-/* ---------- Filtros y lista ---------- */
+/* ---------- Ubicación en el formulario (GPS + mapa con pin) ---------- */
+
+function pintarEstadoUbic(tipo, texto) {
+  const el = $("#ubic-estado");
+  if (!el) return;
+  if (!tipo) {
+    if (formUbic) {
+      tipo = "ok";
+      texto =
+        formUbic.precision != null
+          ? `Ubicación guardada · precisión ±${Math.round(formUbic.precision)} m`
+          : "Ubicación marcada en el mapa";
+    } else {
+      tipo = "";
+      texto = "Sin ubicación todavía";
+    }
+  }
+  const iconos = { ok: "check", buscando: "cargando", error: "alerta", aviso: "alerta" };
+  el.className = `ubic-estado ${tipo}`;
+  el.innerHTML = `${icono(iconos[tipo] || "pin", tipo === "buscando" ? "girando" : "")}<span>${texto}</span>`;
+}
+
+function mensajeErrorGPS(err) {
+  if (err && err.code === 1)
+    return "Permiso de ubicación denegado. Actívalo en el navegador o marca la casa tocando el mapa.";
+  if (err && err.code === 3) return "El GPS tardó demasiado. Intenta de nuevo al aire libre o toca el mapa.";
+  return "No se pudo obtener la ubicación. Intenta de nuevo o toca el mapa donde está la casa.";
+}
+
+function detenerGPS() {
+  if (gpsWatchId != null && navigator.geolocation) navigator.geolocation.clearWatch(gpsWatchId);
+  gpsWatchId = null;
+  clearTimeout(gpsTemporizador);
+  gpsTemporizador = null;
+}
+
+/* Escucha el GPS unos segundos y se queda con la lectura más precisa */
+function capturarUbicacion() {
+  if (!("geolocation" in navigator)) {
+    pintarEstadoUbic("error", "Este teléfono no permite obtener la ubicación. Marca la casa tocando el mapa.");
+    return;
+  }
+  detenerGPS();
+  pintarEstadoUbic("buscando", "Buscando señal GPS…");
+  let mejor = null;
+
+  const terminar = () => {
+    detenerGPS();
+    if (!mejor) return;
+    if (mejor.precision > GPS_PRECISION_DUDOSA) {
+      pintarEstadoUbic(
+        "aviso",
+        `Precisión baja (±${Math.round(mejor.precision)} m). Revisa el pin y muévelo si hace falta.`
+      );
+    } else {
+      pintarEstadoUbic();
+    }
+  };
+
+  gpsTemporizador = setTimeout(() => {
+    if (!mejor) {
+      detenerGPS();
+      pintarEstadoUbic("error", mensajeErrorGPS({ code: 3 }));
+    } else {
+      terminar();
+    }
+  }, GPS_ESPERA_MS);
+
+  gpsWatchId = navigator.geolocation.watchPosition(
+    (pos) => {
+      const lectura = {
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        precision: pos.coords.accuracy,
+      };
+      if (!mejor || lectura.precision < mejor.precision) {
+        mejor = lectura;
+        ponerUbicForm(lectura, true);
+        pintarEstadoUbic("buscando", `Afinando ubicación… ±${Math.round(lectura.precision)} m`);
+      }
+      if (lectura.precision <= GPS_PRECISION_BUENA) terminar();
+    },
+    (err) => {
+      detenerGPS();
+      if (mejor) terminar();
+      else pintarEstadoUbic("error", mensajeErrorGPS(err));
+    },
+    { enableHighAccuracy: true, maximumAge: 0, timeout: GPS_ESPERA_MS }
+  );
+}
+
+function ponerUbicForm(ubic, centrar) {
+  formUbic = ubic;
+  if (!mapaForm) return;
+  const punto = [ubic.lat, ubic.lng];
+  if (!pinForm) {
+    pinForm = L.marker(punto, { draggable: true, autoPan: true, icon: iconoPinCasa() }).addTo(mapaForm);
+    pinForm.on("dragend", () => {
+      detenerGPS();
+      const p = pinForm.getLatLng();
+      formUbic = { lat: p.lat, lng: p.lng, precision: null };
+      pintarEstadoUbic();
+    });
+  } else {
+    pinForm.setLatLng(punto);
+  }
+  if (centrar) mapaForm.setView(punto, Math.max(mapaForm.getZoom(), 18));
+}
+
+function quitarUbicacion() {
+  detenerGPS();
+  formUbic = null;
+  if (pinForm && mapaForm) mapaForm.removeLayer(pinForm);
+  pinForm = null;
+  pintarEstadoUbic();
+}
+
+function iniciarMapaForm() {
+  const el = $("#form-mapa");
+  if (!el || mapaForm) return;
+  if (!HAY_MAPAS) {
+    el.innerHTML = `<div class="mapa-fallback">El mapa necesita internet. Igual se guardan las coordenadas del GPS.</div>`;
+    return;
+  }
+  const centro = formUbic ? [formUbic.lat, formUbic.lng] : centroCenso() || CENTRO_MARACAIBO;
+  mapaForm = L.map(el, { zoomControl: true }).setView(centro, formUbic ? 18 : centroCenso() ? 16 : 13);
+  agregarCapasBase(mapaForm);
+  mapaForm.on("click", (ev) => {
+    detenerGPS();
+    ponerUbicForm({ lat: ev.latlng.lat, lng: ev.latlng.lng, precision: null }, false);
+    pintarEstadoUbic();
+  });
+  if (formUbic) ponerUbicForm(formUbic, true);
+  setTimeout(() => mapaForm && mapaForm.invalidateSize(), 250);
+}
+
+function iconoPinCasa() {
+  return L.divIcon({
+    className: "pin-casa",
+    html: '<svg viewBox="0 0 24 24"><path d="M12 22s-7-6-7-12a7 7 0 0 1 14 0c0 6-7 12-7 12z"/><circle cx="12" cy="10" r="2.6"/></svg>',
+    iconSize: [36, 36],
+    iconAnchor: [18, 34],
+  });
+}
+
+function destruirMapaForm() {
+  if (mapaForm) mapaForm.remove();
+  mapaForm = null;
+  pinForm = null;
+}
+
+/* ---------- Resumen, filtros y lista ---------- */
+
+function renderResumen() {
+  const cont = $("#censo-resumen");
+  const personas = casasCenso.flatMap((c) => c.personas);
+  const pendientesN = personas.filter((p) => p.estado === "pendiente").length;
+  cont.innerHTML = `
+    <div class="kpis">
+      <div class="kpi destacado"><span class="kpi-valor">${casasCenso.length}</span><span class="kpi-etiqueta">Casas</span></div>
+      <div class="kpi"><span class="kpi-valor">${personas.length}</span><span class="kpi-etiqueta">Personas</span></div>
+      <div class="kpi"><span class="kpi-valor">${pendientesN}</span><span class="kpi-etiqueta">Pendientes</span></div>
+    </div>`;
+}
 
 function renderFiltros() {
-  const cont = document.querySelector("#censo-filtros");
+  const cont = $("#censo-filtros");
   cont.innerHTML = `
     <div class="censo-filtros">
-      <input type="search" id="filtro-texto" placeholder="🔎 Buscar nombre, dirección, familia…"
-             value="${esc(filtros.texto)}" />
+      <div class="buscador">
+        ${icono("buscar")}
+        <input type="search" id="filtro-texto" placeholder="Buscar nombre, dirección, familia…"
+               value="${esc(filtros.texto)}" />
+      </div>
       <div class="filtro-chips">
         <button class="cat-chip ${!filtros.categoria ? "activo" : ""}" data-accion="filtro-cat" data-cat="">Todas</button>
         ${CATEGORIAS.map(
@@ -660,8 +1020,8 @@ function renderFiltros() {
                   data-accion="filtro-cat" data-cat="${c.slug}">${c.emoji} ${esc(c.etiqueta)}</button>`
         ).join("")}
       </div>
-      <div class="filtro-selects">
-        <select id="filtro-sector">
+      <div class="filtro-fila">
+        <select id="filtro-sector" aria-label="Zona">
           <option value="">Todas las zonas</option>
           ${sectoresCenso
             .map(
@@ -670,7 +1030,7 @@ function renderFiltros() {
             )
             .join("")}
         </select>
-        <select id="filtro-estado">
+        <select id="filtro-estado" aria-label="Estado">
           <option value="">Todos los estados</option>
           ${Object.entries(ESTADOS)
             .map(
@@ -679,7 +1039,8 @@ function renderFiltros() {
             )
             .join("")}
         </select>
-        <button class="btn-secundario" data-accion="recargar">🔄</button>
+        <button class="btn btn-icono" data-accion="recargar" title="Recargar" aria-label="Recargar">${icono("recargar")}</button>
+        <button class="btn btn-icono" data-accion="exportar-excel" title="Exportar Excel por zona" aria-label="Exportar Excel por zona">${icono("descargar")}</button>
       </div>
     </div>`;
 }
@@ -717,19 +1078,18 @@ function badgesCategorias(slugs) {
   return slugs
     .map((s) => {
       const c = catInfo(s);
-      return `<span class="badge turno">${c.emoji} ${esc(c.etiqueta)}</span>`;
+      return `<span class="badge cat">${c.emoji} ${esc(c.etiqueta)}</span>`;
     })
     .join("");
 }
 
 function cardPersona(p, casa) {
-  const telWA = casa.telefono;
   const est = ESTADOS[p.estado] || ESTADOS.pendiente;
   return `
     <div class="persona-censo">
       <div class="persona-censo-cab">
-        <strong>${esc(p.nombre)}</strong>${p.edad != null ? ` <span class="mini-dia">· ${p.edad} años</span>` : ""}
-        <select class="select-estado ${est.clase}" data-accion="cambiar-estado" data-id="${p.id}">
+        <span class="persona-nombre">${esc(p.nombre)}${p.edad != null ? ` <span class="persona-edad">· ${p.edad} años</span>` : ""}</span>
+        <select class="select-estado ${est.clase}" data-accion="cambiar-estado" data-id="${p.id}" aria-label="Estado de seguimiento">
           ${Object.entries(ESTADOS)
             .map(
               ([k, v]) => `<option value="${k}" ${k === p.estado ? "selected" : ""}>${v.etiqueta}</option>`
@@ -738,64 +1098,87 @@ function cardPersona(p, casa) {
         </select>
       </div>
       <div class="persona-censo-badges">${badgesCategorias(p.categorias)}</div>
-      ${p.notas ? `<p class="mini-dia">📝 ${esc(p.notas)}</p>` : ""}
+      ${p.notas ? `<p class="persona-nota">📝 ${esc(p.notas)}</p>` : ""}
       <div class="persona-censo-pie">
         ${
-          telWA
-            ? `<a class="btn-whatsapp" href="${linkWhatsApp(telWA, mensajeWhatsApp(p))}" target="_blank" rel="noopener">💬 WhatsApp</a>`
+          casa.telefono
+            ? `<a class="btn btn-whatsapp" href="${linkWhatsApp(casa.telefono, mensajeWhatsApp(p))}" target="_blank" rel="noopener">WhatsApp</a>`
             : ""
         }
-        <button class="btn-mini" data-accion="editar-persona" data-id="${p.id}">✏️</button>
-        <button class="btn-mini" data-accion="eliminar-persona" data-id="${p.id}">🗑️</button>
-        <span class="mini-dia registro-pie">${fechaCorta(p.creado_en)}</span>
+        <button class="btn btn-icono" data-accion="editar-persona" data-id="${p.id}" aria-label="Editar persona">${icono("editar")}</button>
+        <button class="btn btn-icono peligro" data-accion="eliminar-persona" data-id="${p.id}" aria-label="Quitar persona">${icono("borrar")}</button>
+        <span class="registro-pie">${fechaCorta(p.creado_en)}</span>
       </div>
     </div>`;
 }
 
+function accionesUbicacion(c) {
+  if (tieneUbicacion(c)) {
+    return `
+      <a class="btn btn-principal btn-chip" href="${linkComoLlegar(c)}" target="_blank" rel="noopener">${icono("ruta")} Cómo llegar</a>
+      <button class="btn btn-icono" data-accion="ver-en-mapa" data-id="${c.id}" title="Ver en mapa" aria-label="Ver en mapa">${icono("mapa")}</button>`;
+  }
+  return `<button class="btn btn-secundario btn-chip ubic-falta" data-accion="editar-casa" data-id="${c.id}">${icono("pin")} Agregar ubicación</button>`;
+}
+
+function cardCasa(c) {
+  return `
+    <div class="card casa-card">
+      <div class="casa-cab">
+        <div class="casa-avatar" style="background:${colorZona(c.sector_id)}1a">🏠</div>
+        <div class="casa-info">
+          <div class="casa-titulo">
+            <strong>${esc(c.familia || "Casa")}</strong>
+            <span class="zona-pill">${puntoZona(c.sector_id)}${esc(c.sector)}</span>
+          </div>
+          <div class="casa-linea">${icono("pin")}<span>${esc(c.direccion)}</span></div>
+          ${
+            c.telefono
+              ? `<div class="casa-linea">${icono("tel")}<a href="tel:${esc(c.telefono)}">${esc(formatoLocal(c.telefono))}</a></div>`
+              : ""
+          }
+          ${c.notas ? `<div class="casa-linea">📝 <span>${esc(c.notas)}</span></div>` : ""}
+        </div>
+      </div>
+      <div class="casa-acciones">
+        ${accionesUbicacion(c)}
+        <span class="espaciador"></span>
+        <button class="btn btn-icono" data-accion="persona-en-casa" data-id="${c.id}" title="Agregar persona" aria-label="Agregar persona">${icono("personaMas")}</button>
+        <button class="btn btn-icono" data-accion="editar-casa" data-id="${c.id}" title="Editar casa" aria-label="Editar casa">${icono("editar")}</button>
+        <button class="btn btn-icono peligro" data-accion="eliminar-casa" data-id="${c.id}" title="Quitar casa" aria-label="Quitar casa">${icono("borrar")}</button>
+      </div>
+      ${
+        c.personasVisibles.length
+          ? `<div class="personas-lista">${c.personasVisibles.map((p) => cardPersona(p, c)).join("")}${
+              c.personasVisibles.length < c.personas.length
+                ? `<p class="mas-fuera-filtro">${plural(c.personas.length - c.personasVisibles.length, "persona más", "personas más")} en esta casa fuera del filtro</p>`
+                : ""
+            }</div>`
+          : ""
+      }
+    </div>`;
+}
+
 function renderLista() {
-  const cont = document.querySelector("#censo-lista");
+  renderResumen();
+  const cont = $("#censo-lista");
   const lista = casasFiltradas();
   const totalPersonas = lista.reduce((n, c) => n + c.personasVisibles.length, 0);
 
   if (!casasCenso.length) {
-    cont.innerHTML = `<div class="card vacio-card">Aún no hay casas registradas.<br>Toca <strong>➕ Registrar casa / visita</strong> para comenzar el censo.</div>`;
+    cont.innerHTML = `
+      <div class="card vacio-card">
+        <span class="vacio-icono">🏡</span>
+        <strong>Aún no hay casas registradas</strong>
+        <span class="texto-suave">Toca <strong>Registrar casa</strong> para comenzar el censo.</span>
+      </div>`;
     return;
   }
 
-  const cards = lista
-    .map(
-      (c) => `
-    <div class="card casa-card">
-      <div class="casa-cab">
-        <div>
-          <strong>🏠 ${esc(c.familia || "Casa")}</strong>
-          <span class="badge rol">${esc(c.sector)}</span>
-          <p class="mini-dia">📍 ${esc(c.direccion)}
-            ${c.telefono ? ` · <a href="tel:${esc(c.telefono)}">📞 ${esc(formatoLocal(c.telefono))}</a>` : ""}
-          </p>
-          ${c.notas ? `<p class="mini-dia">📝 ${esc(c.notas)}</p>` : ""}
-        </div>
-        <div class="casa-botones">
-          <button class="btn-mini" data-accion="persona-en-casa" data-id="${c.id}">➕ Persona</button>
-          <button class="btn-mini" data-accion="editar-casa" data-id="${c.id}">✏️</button>
-          <button class="btn-mini" data-accion="eliminar-casa" data-id="${c.id}">🗑️</button>
-        </div>
-      </div>
-      ${c.personasVisibles.map((p) => cardPersona(p, c)).join("")}
-      ${
-        c.personasVisibles.length < c.personas.length
-          ? `<p class="mini-dia">(${c.personas.length - c.personasVisibles.length} persona(s) más en esta casa fuera del filtro)</p>`
-          : ""
-      }
-    </div>`
-    )
-    .join("");
-
+  const hayFiltros = filtros.texto || filtros.categoria || filtros.sector || filtros.estado;
   cont.innerHTML = `
-    <p class="censo-contador">${lista.length} casa${lista.length !== 1 ? "s" : ""} · ${totalPersonas} persona${totalPersonas !== 1 ? "s" : ""}${
-      filtros.texto || filtros.categoria || filtros.sector || filtros.estado ? " (con filtros)" : ""
-    }</p>
-    ${cards || `<div class="card vacio-card">Ninguna casa coincide con los filtros.</div>`}`;
+    <p class="censo-contador">${plural(lista.length, "casa")} · ${plural(totalPersonas, "persona")}${hayFiltros ? " (con filtros)" : ""}</p>
+    ${lista.map(cardCasa).join("") || `<div class="card vacio-card">Ninguna casa coincide con los filtros.</div>`}`;
 }
 
 /* ---------- Acciones sobre registros ---------- */
@@ -852,6 +1235,117 @@ async function eliminarCasa(id) {
   renderLista();
 }
 
+/* ---------- Mapa general ---------- */
+
+let mapaGeneral = null;
+let capaCasas = null;
+let marcadoresCasa = {};
+let pinYo = null;
+let mapaZona = "";
+
+function popupCasa(c) {
+  const emojis = [...new Set(c.personas.flatMap((p) => p.categorias))]
+    .map((s) => catInfo(s).emoji)
+    .join(" ");
+  return `
+    <div class="popup-casa">
+      <strong>${esc(c.familia || "Casa")}</strong>
+      <p>${esc(c.sector)} · ${esc(c.direccion)}</p>
+      <p>${plural(c.personas.length, "persona")}${emojis ? ` · ${emojis}` : ""}</p>
+      <a class="btn btn-principal" href="${linkComoLlegar(c)}" target="_blank" rel="noopener">Cómo llegar</a>
+    </div>`;
+}
+
+function renderMapaBarra() {
+  $("#mapa-barra").innerHTML = `
+    <div class="mapa-barra">
+      <select id="mapa-filtro-zona" class="selector-zona" aria-label="Zona">
+        <option value="">Todas las zonas</option>
+        ${sectoresCenso
+          .map(
+            (s) =>
+              `<option value="${s.id}" ${String(s.id) === mapaZona ? "selected" : ""}>${esc(s.nombre)}</option>`
+          )
+          .join("")}
+      </select>
+      <button class="btn btn-icono" data-accion="recargar-mapa" title="Recargar" aria-label="Recargar">${icono("recargar")}</button>
+    </div>`;
+}
+
+function renderMapa({ enfocar } = {}) {
+  if (enfocar) mapaZona = "";
+  renderMapaBarra();
+
+  const casas = mapaZona ? casasCenso.filter((c) => String(c.sector_id) === mapaZona) : casasCenso;
+  const ubicadas = casas.filter(tieneUbicacion);
+  const sinUbic = casas.length - ubicadas.length;
+
+  const zonasLeyenda = mapaZona ? sectoresCenso.filter((s) => String(s.id) === mapaZona) : sectoresCenso;
+  $("#mapa-pie").innerHTML = `
+    <div class="mapa-pie">
+      ${zonasLeyenda.map((s) => `<span class="leyenda">${puntoZona(s.id)}${esc(s.nombre)}</span>`).join("")}
+      <span class="mapa-sin-ubic">${plural(ubicadas.length, "casa")} en el mapa${
+        sinUbic ? ` · ${plural(sinUbic, "casa")} sin ubicación (agrégala desde la tarjeta de la casa)` : ""
+      }</span>
+    </div>`;
+
+  const el = $("#mapa-general");
+  if (!HAY_MAPAS) {
+    el.innerHTML = `<div class="mapa-fallback">El mapa necesita internet para cargar. Revisa la conexión y recarga la página.</div>`;
+    return;
+  }
+
+  if (!mapaGeneral) {
+    mapaGeneral = L.map(el, { zoomControl: true }).setView(CENTRO_MARACAIBO, 13);
+    agregarCapasBase(mapaGeneral);
+    capaCasas = L.layerGroup().addTo(mapaGeneral);
+  }
+
+  capaCasas.clearLayers();
+  marcadoresCasa = {};
+  ubicadas.forEach((c) => {
+    const m = L.circleMarker([c.lat, c.lng], {
+      radius: 9,
+      color: "#ffffff",
+      weight: 2.5,
+      fillColor: colorZona(c.sector_id),
+      fillOpacity: 1,
+    }).bindPopup(popupCasa(c));
+    m.addTo(capaCasas);
+    marcadoresCasa[c.id] = m;
+  });
+
+  /* el contenedor acaba de hacerse visible: Leaflet necesita medirlo */
+  setTimeout(() => {
+    mapaGeneral.invalidateSize();
+    const destino = enfocar && marcadoresCasa[enfocar];
+    if (destino) {
+      mapaGeneral.setView(destino.getLatLng(), 18);
+      destino.openPopup();
+    } else if (ubicadas.length) {
+      mapaGeneral.fitBounds(
+        L.latLngBounds(ubicadas.map((c) => [c.lat, c.lng])),
+        { padding: [36, 36], maxZoom: 17 }
+      );
+    }
+  }, 80);
+}
+
+function centrarmeEnMapa() {
+  if (!mapaGeneral || !("geolocation" in navigator)) return;
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const punto = [pos.coords.latitude, pos.coords.longitude];
+      const iconoYo = L.divIcon({ className: "", html: '<div class="pin-yo"></div>', iconSize: [16, 16] });
+      if (pinYo) pinYo.setLatLng(punto);
+      else pinYo = L.marker(punto, { icon: iconoYo, interactive: false }).addTo(mapaGeneral);
+      mapaGeneral.setView(punto, 17);
+    },
+    (err) => alert(mensajeErrorGPS(err)),
+    { enableHighAccuracy: true, timeout: GPS_ESPERA_MS, maximumAge: 30000 }
+  );
+}
+
 /* ---------- Estadísticas ---------- */
 
 function barra(etiqueta, valor, max, extra = "") {
@@ -867,7 +1361,7 @@ function barra(etiqueta, valor, max, extra = "") {
 let statsSector = "";
 
 function renderStats() {
-  const cont = document.querySelector("#stats-contenido");
+  const cont = $("#stats-contenido");
   const casas = statsSector
     ? casasCenso.filter((c) => String(c.sector_id) === statsSector)
     : casasCenso;
@@ -881,8 +1375,8 @@ function renderStats() {
 
   const selector = `
     <div class="censo-filtros no-imprimir">
-      <select id="stats-filtro-sector">
-        <option value="">📊 Todas las zonas</option>
+      <select id="stats-filtro-sector" aria-label="Zona">
+        <option value="">Todas las zonas</option>
         ${sectoresCenso
           .map(
             (s) =>
@@ -900,15 +1394,19 @@ function renderStats() {
     </div>`;
 
   if (!total && !totalCasas) {
-    cont.innerHTML = `${selector}${encabezadoImpresion}<div class="card vacio-card">Aún no hay datos del censo${
+    cont.innerHTML = `${selector}${encabezadoImpresion}<div class="card vacio-card"><span class="vacio-icono">📊</span>Aún no hay datos del censo${
       statsSector ? " en esta zona" : ""
-    }.<br>Las estadísticas aparecerán cuando se registren las primeras casas.</div>`;
+    }.<span class="texto-suave">Las estadísticas aparecerán cuando se registren las primeras casas.</span></div>`;
     return;
   }
 
   /* Por estado */
   const porEstado = { pendiente: 0, en_proceso: 0, atendido: 0 };
   personas.forEach((p) => porEstado[p.estado]++);
+
+  /* Ubicación */
+  const conUbic = casas.filter(tieneUbicacion).length;
+  const pctUbic = totalCasas ? Math.round((conUbic / totalCasas) * 100) : 0;
 
   /* Por categoría */
   const porCat = {};
@@ -918,9 +1416,9 @@ function renderStats() {
 
   /* Por zona (personas y casas) */
   const porSector = {};
-  if (!statsSector) sectoresCenso.forEach((s) => (porSector[s.nombre] = { personas: 0, casas: 0 }));
+  if (!statsSector) sectoresCenso.forEach((s) => (porSector[s.nombre] = { id: s.id, personas: 0, casas: 0 }));
   casas.forEach((c) => {
-    const s = (porSector[c.sector] = porSector[c.sector] || { personas: 0, casas: 0 });
+    const s = (porSector[c.sector] = porSector[c.sector] || { id: c.sector_id, personas: 0, casas: 0 });
     s.casas++;
     s.personas += c.personas.length;
   });
@@ -950,9 +1448,15 @@ function renderStats() {
   cont.innerHTML = `
     ${selector}
     ${encabezadoImpresion}
-    <div class="card dia-encabezado">
-      <h2>📊 Estadísticas${nombreSectorActivo ? ` · ${esc(nombreSectorActivo)}` : " del censo"}</h2>
-      <p class="dia-titulo">${total} persona${total !== 1 ? "s" : ""} censada${total !== 1 ? "s" : ""} · ${totalCasas} casa${totalCasas !== 1 ? "s" : ""} visitada${totalCasas !== 1 ? "s" : ""}</p>
+    <div class="kpis cuatro">
+      <div class="kpi destacado"><span class="kpi-valor">${totalCasas}</span><span class="kpi-etiqueta">Casas visitadas</span></div>
+      <div class="kpi"><span class="kpi-valor">${total}</span><span class="kpi-etiqueta">Personas censadas</span></div>
+      <div class="kpi"><span class="kpi-valor">${pctUbic}%</span><span class="kpi-etiqueta">Casas con ubicación (${conUbic})</span></div>
+      <div class="kpi"><span class="kpi-valor">${porEstado.pendiente}</span><span class="kpi-etiqueta">Pendientes</span></div>
+    </div>
+
+    <div class="card">
+      <h3>Seguimiento${nombreSectorActivo ? ` · ${esc(nombreSectorActivo)}` : ""}</h3>
       <div class="stats-estados">
         <span class="badge ${ESTADOS.pendiente.clase}">Pendientes: ${porEstado.pendiente}</span>
         <span class="badge ${ESTADOS.en_proceso.clase}">En proceso: ${porEstado.en_proceso}</span>
@@ -963,7 +1467,7 @@ function renderStats() {
     <div class="card">
       <h3>Por categoría</h3>
       ${CATEGORIAS.map((c) => barra(`${c.emoji} ${esc(c.etiqueta)}`, porCat[c.slug], maxCat)).join("")}
-      <p class="mini-dia">Una persona con varias categorías cuenta en cada una.</p>
+      <p class="texto-suave">Una persona con varias categorías cuenta en cada una.</p>
     </div>
 
     ${
@@ -973,7 +1477,12 @@ function renderStats() {
       <h3>Por zona</h3>
       ${nombresSectores
         .map((s) =>
-          barra(esc(s), porSector[s].personas, maxSector, ` <span class="barra-extra">· ${porSector[s].casas} casa${porSector[s].casas !== 1 ? "s" : ""}</span>`)
+          barra(
+            `${puntoZona(porSector[s].id)}${esc(s)}`,
+            porSector[s].personas,
+            maxSector,
+            ` <span class="barra-extra">· ${plural(porSector[s].casas, "casa")}</span>`
+          )
         )
         .join("")}
     </div>`
@@ -1009,22 +1518,23 @@ function renderStats() {
           </tbody>
         </table>
       </div>
-      <p class="mini-dia">La vista clave para organizar el seguimiento de la parroquia.</p>
+      <p class="texto-suave">La vista clave para organizar el seguimiento de la parroquia.</p>
     </div>
 
     <div class="stats-botones no-imprimir">
-      <button class="btn-secundario btn-actualizar" data-accion="actualizar-stats">🔄 Actualizar</button>
-      <button class="btn-principal btn-actualizar" data-accion="exportar-pdf">🖨️ Descargar PDF</button>
+      <button class="btn btn-secundario" data-accion="actualizar-stats">${icono("recargar")} Actualizar</button>
+      <button class="btn btn-principal" data-accion="exportar-pdf">${icono("imprimir")} PDF</button>
+      <button class="btn btn-acento btn-ancho" data-accion="exportar-excel">${icono("descargar")} Exportar Excel por zona</button>
     </div>`;
 }
 
-/* ---------- Sin configurar ---------- */
+/* ---------- Sin configurar / sin conexión ---------- */
 
 function renderSinConfigurar(sel) {
-  document.querySelector(sel).innerHTML = `
+  $(sel).innerHTML = `
     <div class="card vacio-card">
       <p>⚙️ El censo todavía no está conectado.</p>
-      <p class="mini-dia" style="margin-top:8px">
+      <p class="texto-suave" style="margin-top:8px">
         1. Crear el proyecto gratis en <strong>supabase.com</strong><br>
         2. Ejecutar el script <strong>supabase.sql</strong> en el SQL Editor<br>
         3. Pegar la URL y la anon key en <strong>config.js</strong>
@@ -1033,65 +1543,136 @@ function renderSinConfigurar(sel) {
 }
 
 function renderSinConexion(sel) {
-  document.querySelector(sel).innerHTML = `
+  $(sel).innerHTML = `
     <div class="card vacio-card">
-      📶 No hubo señal al abrir la app y el censo no se pudo conectar.<br>
-      <span class="mini-dia">Cuando tengas conexión, recarga la página. Mientras tanto puedes usar la guía de preguntas.</span>
+      <span class="vacio-icono">📶</span>
+      No hubo señal al abrir la app y el censo no se pudo conectar.
+      <span class="texto-suave">Cuando tengas conexión, recarga la página. Mientras tanto puedes usar la guía de preguntas.</span>
     </div>`;
+}
+
+/* ---------- Navegación entre pestañas ---------- */
+
+function mostrarVista(id) {
+  vistaActual = id;
+  document.querySelectorAll(".vista").forEach((v) => {
+    v.classList.toggle("visible", v.id === `vista-${id}`);
+  });
+  document.querySelectorAll(".tab").forEach((t) => {
+    t.classList.toggle("activo", t.dataset.vista === id);
+  });
+  $("#fab").classList.toggle("oculto", id === "stats");
+  $("#fab").classList.toggle("compacto", id === "mapa");
+  window.scrollTo({ top: 0 });
+}
+
+function irA(id, opciones) {
+  mostrarVista(id);
+  if (id === "censo") refrescarCenso();
+  if (id === "stats") refrescarStats();
+  if (id === "mapa") refrescarMapa(opciones);
 }
 
 /* ---------- Eventos (delegación) ---------- */
 
-document.querySelector("#vista-censo").addEventListener("click", (ev) => {
+document.addEventListener("click", (ev) => {
+  const tab = ev.target.closest(".tab");
+  if (tab) {
+    irA(tab.dataset.vista);
+    return;
+  }
+
   const el = ev.target.closest("[data-accion]");
   if (!el) return;
   const accion = el.dataset.accion;
+  const id = el.dataset.id;
 
-  if (accion === "exportar-excel") {
-    exportarExcel();
-  } else if (accion === "abrir-form") {
-    form = { modo: "nueva-casa" };
-    renderFormulario();
-  } else if (accion === "cerrar-form") {
-    form = { modo: null };
-    renderFormulario();
-  } else if (accion === "guardar-form") {
-    guardarFormulario();
-  } else if (accion === "agregar-bloque") {
-    document.querySelector("#form-personas").insertAdjacentHTML("beforeend", bloquePersona({}, true));
-  } else if (accion === "quitar-bloque") {
-    el.closest(".form-persona").remove();
-  } else if (accion === "toggle-cat") {
-    el.classList.toggle("activo");
-  } else if (accion === "filtro-cat") {
-    filtros.categoria = el.dataset.cat;
-    renderFiltros();
-    renderLista();
-  } else if (accion === "recargar" || accion === "reintentar-carga") {
-    censoCargado = false;
-    refrescarCenso();
-  } else if (accion === "sincronizar") {
-    sincronizarPendientes();
-  } else if (accion === "persona-en-casa") {
-    const casa = casasCenso.find((c) => c.id === el.dataset.id);
-    form = { modo: "agregar-persona", casa };
-    renderFormulario();
-  } else if (accion === "editar-casa") {
-    const casa = casasCenso.find((c) => c.id === el.dataset.id);
-    form = { modo: "editar-casa", casa };
-    renderFormulario();
-  } else if (accion === "eliminar-casa") {
-    eliminarCasa(el.dataset.id);
-  } else if (accion === "editar-persona") {
-    const { persona, casa } = buscarPersona(el.dataset.id);
-    form = { modo: "editar-persona", persona, casa };
-    renderFormulario();
-  } else if (accion === "eliminar-persona") {
-    eliminarPersona(el.dataset.id);
+  switch (accion) {
+    case "abrir-form":
+      if (!sb) {
+        alert("El censo no está conectado. Revisa la señal y recarga la página.");
+        return;
+      }
+      form = { modo: "nueva-casa" };
+      renderFormulario();
+      break;
+    case "cerrar-form":
+      cerrarFormulario();
+      break;
+    case "guardar-form":
+      guardarFormulario();
+      break;
+    case "agregar-bloque":
+      $("#form-personas").insertAdjacentHTML("beforeend", bloquePersona({}, true));
+      $("#form-personas").lastElementChild.scrollIntoView({ behavior: "smooth", block: "start" });
+      break;
+    case "quitar-bloque":
+      el.closest(".form-persona").remove();
+      break;
+    case "toggle-cat":
+      el.classList.toggle("activo");
+      break;
+    case "capturar-ubicacion":
+      capturarUbicacion();
+      break;
+    case "quitar-ubicacion":
+      quitarUbicacion();
+      break;
+    case "filtro-cat":
+      filtros.categoria = el.dataset.cat;
+      renderFiltros();
+      renderLista();
+      break;
+    case "recargar":
+    case "reintentar-carga":
+      censoCargado = false;
+      refrescarCenso();
+      break;
+    case "exportar-excel":
+      exportarExcel();
+      break;
+    case "sincronizar":
+      sincronizarPendientes();
+      break;
+    case "persona-en-casa":
+      form = { modo: "agregar-persona", casa: casasCenso.find((c) => c.id === id) };
+      renderFormulario();
+      break;
+    case "editar-casa":
+      form = { modo: "editar-casa", casa: casasCenso.find((c) => c.id === id) };
+      renderFormulario();
+      break;
+    case "eliminar-casa":
+      eliminarCasa(id);
+      break;
+    case "editar-persona": {
+      const { persona, casa } = buscarPersona(id);
+      form = { modo: "editar-persona", persona, casa };
+      renderFormulario();
+      break;
+    }
+    case "eliminar-persona":
+      eliminarPersona(id);
+      break;
+    case "ver-en-mapa":
+      irA("mapa", { enfocar: id });
+      break;
+    case "recargar-mapa":
+      refrescarMapa({ recargar: true });
+      break;
+    case "mapa-centrarme":
+      centrarmeEnMapa();
+      break;
+    case "actualizar-stats":
+      refrescarStats();
+      break;
+    case "exportar-pdf":
+      window.print();
+      break;
   }
 });
 
-document.querySelector("#vista-censo").addEventListener("change", (ev) => {
+document.addEventListener("change", (ev) => {
   const el = ev.target;
   if (el.dataset.accion === "cambiar-estado") {
     cambiarEstado(el.dataset.id, el.value);
@@ -1101,52 +1682,36 @@ document.querySelector("#vista-censo").addEventListener("change", (ev) => {
   } else if (el.id === "filtro-estado") {
     filtros.estado = el.value;
     renderLista();
+  } else if (el.id === "mapa-filtro-zona") {
+    mapaZona = el.value;
+    renderMapa();
+  } else if (el.id === "stats-filtro-sector") {
+    statsSector = el.value;
+    renderStats();
   }
 });
 
-document.querySelector("#vista-censo").addEventListener("input", (ev) => {
+document.addEventListener("input", (ev) => {
   if (ev.target.id === "filtro-texto") {
     filtros.texto = ev.target.value;
     renderLista();
   }
 });
 
-document.querySelector("#vista-stats").addEventListener("click", (ev) => {
-  const el = ev.target.closest("[data-accion]");
-  if (!el) return;
-  if (el.dataset.accion === "actualizar-stats") refrescarStats();
-  else if (el.dataset.accion === "exportar-pdf") window.print();
+document.addEventListener("keydown", (ev) => {
+  if (ev.key === "Escape" && form.modo) cerrarFormulario();
 });
 
-document.querySelector("#vista-stats").addEventListener("change", (ev) => {
-  if (ev.target.id === "stats-filtro-sector") {
-    statsSector = ev.target.value;
-    renderStats();
-  }
+/* ---------- Inicio ---------- */
+
+window.addEventListener("online", () => {
+  renderEstadoRed();
+  sincronizarPendientes();
 });
+window.addEventListener("offline", renderEstadoRed);
 
-/* ---------- Navegación entre pestañas ---------- */
-
-function mostrarVista(id) {
-  document.querySelectorAll(".vista").forEach((v) => {
-    v.classList.toggle("visible", v.id === `vista-${id}`);
-  });
-  document.querySelectorAll(".tab").forEach((t) => {
-    t.classList.toggle("activo", t.dataset.vista === id);
-  });
-  window.scrollTo({ top: 0 });
-}
-
-document.querySelectorAll(".tab").forEach((tab) => {
-  tab.addEventListener("click", () => {
-    mostrarVista(tab.dataset.vista);
-    if (tab.dataset.vista === "censo") refrescarCenso();
-    if (tab.dataset.vista === "stats") refrescarStats();
-  });
-});
-
-/* Reintentar la cola offline al recuperar señal y al abrir la app */
-window.addEventListener("online", sincronizarPendientes);
-if (sb) sincronizarPendientes();
+renderEstadoRed();
+renderGuiaCenso();
 renderAvisoOffline();
+if (sb) sincronizarPendientes();
 refrescarCenso();
