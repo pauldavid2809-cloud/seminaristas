@@ -1,21 +1,22 @@
 /* ==========================================================================
-   Censo parroquial · Parroquia "El Buen Pastor"
+   Censo parroquial · Parroquia "San Benito de Palermo"
+   Identidad: azul profundo con acentos dorados
    ========================================================================== */
 
 :root {
-  --marron: #5b2d0e;
-  --marron-oscuro: #3f1e08;
-  --dorado: #c9962e;
-  --dorado-claro: #f3e3c0;
-  --crema: #faf6ef;
+  --primario: #1d3a5f;
+  --primario-oscuro: #122940;
+  --acento: #d9a441;
+  --acento-claro: #f5e7c4;
+  --fondo: #f3f6fa;
   --blanco: #ffffff;
-  --tinta: #2b2118;
-  --tinta-suave: #7a6a58;
-  --linea: #e8ddcb;
-  --rojo: #a3341f;
-  --verde: #3d6b35;
-  --radio: 14px;
-  --sombra: 0 1px 3px rgba(63, 30, 8, 0.1), 0 4px 14px rgba(63, 30, 8, 0.06);
+  --tinta: #1c2733;
+  --tinta-suave: #5d6b7a;
+  --linea: #dce4ee;
+  --rojo: #b3402e;
+  --verde: #2f7d4f;
+  --radio: 16px;
+  --sombra: 0 1px 3px rgba(18, 41, 64, 0.08), 0 6px 18px rgba(18, 41, 64, 0.07);
 }
 
 * {
@@ -30,7 +31,7 @@ html {
 
 body {
   font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
-  background: var(--crema);
+  background: var(--fondo);
   color: var(--tinta);
   line-height: 1.5;
   padding-bottom: 84px; /* espacio para las pestañas fijas */
@@ -39,18 +40,18 @@ body {
 /* ---------- Cabecera ---------- */
 
 .cabecera {
-  background: linear-gradient(135deg, var(--marron-oscuro), var(--marron) 60%, #7a4318);
+  background: linear-gradient(135deg, var(--primario-oscuro), var(--primario) 55%, #2e5a8f);
   color: var(--blanco);
   padding: 22px 18px 26px;
   text-align: center;
-  border-bottom: 4px solid var(--dorado);
+  border-bottom: 4px solid var(--acento);
 }
 
 .sobretitulo {
   font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  color: var(--dorado-claro);
+  color: var(--acento-claro);
   margin-bottom: 6px;
 }
 
@@ -76,7 +77,7 @@ body {
   display: flex;
   background: var(--blanco);
   border-top: 1px solid var(--linea);
-  box-shadow: 0 -2px 12px rgba(63, 30, 8, 0.08);
+  box-shadow: 0 -2px 12px rgba(18, 41, 64, 0.1);
 }
 
 .tab {
@@ -99,12 +100,12 @@ body {
 }
 
 .tab.activo {
-  color: var(--marron);
+  color: var(--primario);
 }
 
 .tab.activo span {
-  color: var(--marron);
-  border-bottom: 2px solid var(--dorado);
+  color: var(--primario);
+  border-bottom: 2px solid var(--acento);
 }
 
 /* ---------- Estructura ---------- */
@@ -135,19 +136,19 @@ main {
 .card h3 {
   font-size: 0.95rem;
   margin-bottom: 10px;
-  color: var(--marron);
+  color: var(--primario);
 }
 
 /* ---------- Encabezado destacado (stats) ---------- */
 
 .dia-encabezado {
-  background: linear-gradient(135deg, var(--blanco), var(--dorado-claro));
-  border-color: var(--dorado);
+  background: linear-gradient(135deg, var(--blanco), var(--acento-claro));
+  border-color: var(--acento);
 }
 
 .dia-encabezado h2 {
   font-size: 1.2rem;
-  color: var(--marron-oscuro);
+  color: var(--primario-oscuro);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -193,12 +194,12 @@ main {
 }
 
 .badge.turno {
-  background: var(--dorado-claro);
-  color: var(--marron-oscuro);
+  background: var(--acento-claro);
+  color: var(--primario-oscuro);
 }
 
 .badge.rol {
-  background: var(--crema);
+  background: var(--fondo);
   border: 1px solid var(--linea);
 }
 
@@ -238,8 +239,8 @@ td {
 }
 
 th {
-  background: var(--marron);
-  color: var(--dorado-claro);
+  background: var(--primario);
+  color: var(--acento-claro);
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -247,7 +248,7 @@ th {
 }
 
 tbody tr:nth-child(even) {
-  background: var(--crema);
+  background: var(--fondo);
 }
 
 /* ---------- Censo: formulario ---------- */
@@ -264,8 +265,8 @@ tbody tr:nth-child(even) {
 }
 
 .btn-principal {
-  background: var(--marron);
-  color: var(--dorado-claro);
+  background: var(--primario);
+  color: var(--acento-claro);
 }
 
 .btn-principal:disabled {
@@ -275,7 +276,7 @@ tbody tr:nth-child(even) {
 
 .btn-secundario {
   background: var(--blanco);
-  color: var(--marron);
+  color: var(--primario);
   border: 1px solid var(--linea);
 }
 
@@ -297,7 +298,7 @@ tbody tr:nth-child(even) {
   display: block;
   font-size: 0.78rem;
   font-weight: 700;
-  color: var(--marron-oscuro);
+  color: var(--primario-oscuro);
   margin-bottom: 4px;
 }
 
@@ -320,8 +321,8 @@ tbody tr:nth-child(even) {
 .form-campo select:focus,
 .form-campo textarea:focus,
 .censo-filtros input:focus {
-  outline: 2px solid var(--dorado);
-  border-color: var(--dorado);
+  outline: 2px solid var(--acento);
+  border-color: var(--acento);
 }
 
 .form-fila {
@@ -330,11 +331,11 @@ tbody tr:nth-child(even) {
 }
 
 .form-persona {
-  border: 1px dashed var(--dorado);
+  border: 1px dashed var(--acento);
   border-radius: var(--radio);
   padding: 12px;
   margin-bottom: 10px;
-  background: var(--crema);
+  background: var(--fondo);
 }
 
 .form-persona-cab {
@@ -342,7 +343,7 @@ tbody tr:nth-child(even) {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
-  color: var(--marron-oscuro);
+  color: var(--primario-oscuro);
   font-size: 0.88rem;
 }
 
@@ -406,9 +407,9 @@ tbody tr:nth-child(even) {
 }
 
 .cat-chip.activo {
-  background: var(--marron);
-  border-color: var(--marron);
-  color: var(--dorado-claro);
+  background: var(--primario);
+  border-color: var(--primario);
+  color: var(--acento-claro);
 }
 
 /* ---------- Censo: filtros ---------- */
@@ -455,7 +456,7 @@ tbody tr:nth-child(even) {
 }
 
 .casa-cab a {
-  color: var(--marron);
+  color: var(--primario);
 }
 
 .casa-botones {
@@ -466,7 +467,7 @@ tbody tr:nth-child(even) {
 
 .btn-mini {
   border: 1px solid var(--linea);
-  background: var(--crema);
+  background: var(--fondo);
   border-radius: 8px;
   padding: 4px 9px;
   font-size: 0.78rem;
@@ -493,7 +494,7 @@ tbody tr:nth-child(even) {
 }
 
 .persona-censo-cab strong {
-  color: var(--marron-oscuro);
+  color: var(--primario-oscuro);
 }
 
 .persona-censo-badges {
@@ -540,19 +541,19 @@ tbody tr:nth-child(even) {
 
 .est-pendiente,
 .badge.est-pendiente {
-  background: #f6dcd5;
+  background: #f8ded8;
   color: var(--rojo);
 }
 
 .est-en-proceso,
 .badge.est-en-proceso {
-  background: var(--dorado-claro);
-  color: var(--marron-oscuro);
+  background: var(--acento-claro);
+  color: var(--primario-oscuro);
 }
 
 .est-atendido,
 .badge.est-atendido {
-  background: #dcead9;
+  background: #ddeee3;
   color: var(--verde);
 }
 
@@ -562,17 +563,17 @@ tbody tr:nth-child(even) {
   cursor: pointer;
   font-weight: 700;
   font-size: 0.95rem;
-  color: var(--marron);
+  color: var(--primario);
   list-style-position: inside;
 }
 
 .guia-censo summary:hover {
-  color: var(--marron-oscuro);
+  color: var(--primario-oscuro);
 }
 
 .guia-censo h4 {
   font-size: 0.88rem;
-  color: var(--marron);
+  color: var(--primario);
   margin: 14px 0 4px;
 }
 
@@ -583,8 +584,8 @@ tbody tr:nth-child(even) {
 /* ---------- Censo: aviso offline ---------- */
 
 .aviso-offline {
-  background: var(--dorado-claro);
-  border: 1px solid var(--dorado);
+  background: var(--acento-claro);
+  border: 1px solid var(--acento);
   border-radius: var(--radio);
   padding: 12px 14px;
   font-size: 0.85rem;
@@ -623,7 +624,7 @@ tbody tr:nth-child(even) {
 .barra-pista {
   flex: 1;
   height: 10px;
-  background: var(--crema);
+  background: var(--fondo);
   border: 1px solid var(--linea);
   border-radius: 999px;
   overflow: hidden;
@@ -631,14 +632,14 @@ tbody tr:nth-child(even) {
 
 .barra-relleno {
   height: 100%;
-  background: var(--dorado);
+  background: var(--acento);
   border-radius: 999px;
 }
 
 .barra-valor {
   flex: 0 0 auto;
   font-weight: 700;
-  color: var(--marron-oscuro);
+  color: var(--primario-oscuro);
   white-space: nowrap;
 }
 
@@ -692,7 +693,7 @@ tbody tr:nth-child(even) {
   }
   .stats-print-header h1 {
     font-size: 1.1rem;
-    color: var(--marron-oscuro);
+    color: var(--primario-oscuro);
   }
   .stats-print-header p {
     font-size: 0.85rem;
@@ -724,7 +725,7 @@ tbody tr:nth-child(even) {
     bottom: auto;
     border-top: none;
     border-bottom: 1px solid var(--linea);
-    box-shadow: 0 2px 12px rgba(63, 30, 8, 0.08);
+    box-shadow: 0 2px 12px rgba(18, 41, 64, 0.1);
     justify-content: center;
   }
 
@@ -743,4 +744,10 @@ tbody tr:nth-child(even) {
   .cabecera h1 {
     font-size: 1.7rem;
   }
+}
+
+.barra-extra {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--tinta-suave);
 }

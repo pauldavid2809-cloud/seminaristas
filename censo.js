@@ -1,6 +1,7 @@
 /* ==========================================================================
-   Censo parroquial · Parroquia "El Buen Pastor"
-   Registro de casas y personas + estadísticas (Supabase)
+   Censo parroquial · Parroquia "San Benito de Palermo"
+   Registro de casas y personas por zona + estadísticas (Supabase)
+   (la tabla "sectores" de la base de datos guarda las zonas)
    ========================================================================== */
 
 "use strict";
@@ -20,7 +21,7 @@ const sb =
     : null;
 
 const SALUDO_WA =
-  "Saludos, le escribimos de la Parroquia El Buen Pastor 🙏";
+  "Saludos, le escribimos de la Parroquia San Benito de Palermo 🙏";
 
 const LS_PENDIENTES = "censo_pendientes";
 
@@ -137,7 +138,7 @@ function mensajeWhatsApp(persona) {
       ? motivos[0]
       : `${motivos.slice(0, -1).join(", ")} y ${motivos[motivos.length - 1]}`;
 
-  return `Saludos, le escribimos de la Parroquia El Buen Pastor 🙏. Con respecto a ${nombre}, quisiéramos conversar sobre ${listaMotivos}. ¿Podemos coordinar con usted?`;
+  return `Saludos, le escribimos de la Parroquia San Benito de Palermo 🙏. Con respecto a ${nombre}, quisiéramos conversar sobre ${listaMotivos}. ¿Podemos coordinar con usted?`;
 }
 
 function fechaCorta(iso) {
@@ -175,7 +176,7 @@ async function cargarSectores() {
     .eq("activo", true)
     .order("nombre");
   if (error) throw error;
-  sectoresCenso = data;
+  sectoresCenso = data.map((s) => ({ ...s, nombre: s.nombre.trim() }));
 }
 
 async function cargarCenso() {
@@ -200,7 +201,7 @@ async function cargarCenso() {
   });
   casasCenso = casasRes.data.map((c) => ({
     ...c,
-    sector: c.sectores?.nombre || "",
+    sector: (c.sectores?.nombre || "").trim(),
     personas: porCasa[c.id] || [],
   }));
   censoCargado = true;
@@ -254,7 +255,7 @@ async function refrescarStats() {
   }
 }
 
-/* ---------- Exportar a Excel (una hoja por sector) ---------- */
+/* ---------- Exportar a Excel (una hoja por zona) ---------- */
 
 function exportarExcel() {
   if (typeof XLSX === "undefined") {
@@ -299,10 +300,10 @@ function exportarExcel() {
         });
       });
     });
-    if (!filas.length) filas.push({ Familia: "(sin casas registradas en este sector)" });
+    if (!filas.length) filas.push({ Familia: "(sin casas registradas en esta zona)" });
 
     const hoja = XLSX.utils.json_to_sheet(filas);
-    const nombreHoja = sector.nombre.replace(/[:\\/?*[\]]/g, "").slice(0, 31) || `Sector ${sector.id}`;
+    const nombreHoja = sector.nombre.replace(/[:\\/?*[\]]/g, "").slice(0, 31) || `Zona ${sector.id}`;
     XLSX.utils.book_append_sheet(libro, hoja, nombreHoja);
   });
 
@@ -389,8 +390,8 @@ function renderGuiaCenso() {
       <details>
         <summary>❓ Preguntas para llenar el censo</summary>
         <p class="mini-dia guia-intro">
-          Al llegar, preséntate: «Buenas, venimos de la Parroquia El Buen
-          Pastor y estamos visitando las casas del sector». Luego pregunta:
+          Al llegar, preséntate: «Buenas, venimos de la Parroquia San Benito
+          de Palermo y estamos visitando las casas de la zona». Luego pregunta:
         </p>
 
         <h4>🏠 La casa</h4>
@@ -476,7 +477,7 @@ function camposCasa(c = {}) {
     <div class="form-casa">
       <div class="form-fila">
         <div class="form-campo">
-          <label>Sector *</label>
+          <label>Zona *</label>
           <select class="fc-sector">
             <option value="">— Elegir —</option>
             ${opcionesSectores(c.sector_id)}
@@ -511,7 +512,7 @@ function renderFormulario() {
         ➕ Registrar casa / visita
       </button>
       <button class="btn-secundario btn-registrar" data-accion="exportar-excel">
-        📊 Exportar Excel por sector
+        📊 Exportar Excel por zona
       </button>`;
     return;
   }
@@ -588,7 +589,7 @@ async function guardarFormulario() {
     if (form.modo === "nueva-casa") {
       const casa = leerCamposCasa();
       const personas = leerBloquesPersona();
-      if (!casa.sector_id) return mostrarErrorForm("Elige el sector.");
+      if (!casa.sector_id) return mostrarErrorForm("Elige la zona.");
       if (!casa.direccion) return mostrarErrorForm("Escribe la dirección de la casa.");
       for (const p of personas) {
         if (!p.nombre) return mostrarErrorForm("Cada persona necesita nombre.");
@@ -626,7 +627,7 @@ async function guardarFormulario() {
       if (error) throw error;
     } else if (form.modo === "editar-casa") {
       const casa = leerCamposCasa();
-      if (!casa.sector_id) return mostrarErrorForm("Elige el sector.");
+      if (!casa.sector_id) return mostrarErrorForm("Elige la zona.");
       if (!casa.direccion) return mostrarErrorForm("Escribe la dirección de la casa.");
       const { error } = await sb.from("casas").update(casa).eq("id", form.casa.id);
       if (error) throw error;
@@ -661,7 +662,7 @@ function renderFiltros() {
       </div>
       <div class="filtro-selects">
         <select id="filtro-sector">
-          <option value="">Todos los sectores</option>
+          <option value="">Todas las zonas</option>
           ${sectoresCenso
             .map(
               (s) =>
@@ -881,7 +882,7 @@ function renderStats() {
   const selector = `
     <div class="censo-filtros no-imprimir">
       <select id="stats-filtro-sector">
-        <option value="">📊 Todos los sectores</option>
+        <option value="">📊 Todas las zonas</option>
         ${sectoresCenso
           .map(
             (s) =>
@@ -893,14 +894,14 @@ function renderStats() {
 
   const encabezadoImpresion = `
     <div class="stats-print-header">
-      <h1>Parroquia "El Buen Pastor" · Arquidiócesis de Maracaibo</h1>
-      <p>Estadísticas del censo${nombreSectorActivo ? ` · Sector: ${esc(nombreSectorActivo)}` : " · Todos los sectores"}</p>
+      <h1>Parroquia "San Benito de Palermo" · Arquidiócesis de Maracaibo</h1>
+      <p>Estadísticas del censo${nombreSectorActivo ? ` · Zona: ${esc(nombreSectorActivo)}` : " · Todas las zonas"}</p>
       <p>Generado el ${new Date().toLocaleDateString("es-VE", { day: "numeric", month: "long", year: "numeric" })}</p>
     </div>`;
 
   if (!total && !totalCasas) {
     cont.innerHTML = `${selector}${encabezadoImpresion}<div class="card vacio-card">Aún no hay datos del censo${
-      statsSector ? " en este sector" : ""
+      statsSector ? " en esta zona" : ""
     }.<br>Las estadísticas aparecerán cuando se registren las primeras casas.</div>`;
     return;
   }
@@ -915,7 +916,7 @@ function renderStats() {
   personas.forEach((p) => p.categorias.forEach((c) => porCat[c]++));
   const maxCat = Math.max(1, ...Object.values(porCat));
 
-  /* Por sector (personas y casas) */
+  /* Por zona (personas y casas) */
   const porSector = {};
   if (!statsSector) sectoresCenso.forEach((s) => (porSector[s.nombre] = { personas: 0, casas: 0 }));
   casas.forEach((c) => {
@@ -934,7 +935,7 @@ function renderStats() {
   const dias = Object.keys(porDia).sort();
   const maxDia = Math.max(1, ...Object.values(porDia));
 
-  /* Categoría × sector */
+  /* Categoría × zona */
   const cruce = {};
   CATEGORIAS.forEach((c) => (cruce[c.slug] = {}));
   casas.forEach((casa) =>
@@ -969,10 +970,10 @@ function renderStats() {
       statsSector
         ? ""
         : `<div class="card">
-      <h3>Por sector</h3>
+      <h3>Por zona</h3>
       ${nombresSectores
         .map((s) =>
-          barra(esc(s), porSector[s].personas, maxSector, ` <span class="mini-dia">· ${porSector[s].casas} casa${porSector[s].casas !== 1 ? "s" : ""}</span>`)
+          barra(esc(s), porSector[s].personas, maxSector, ` <span class="barra-extra">· ${porSector[s].casas} casa${porSector[s].casas !== 1 ? "s" : ""}</span>`)
         )
         .join("")}
     </div>`
@@ -992,7 +993,7 @@ function renderStats() {
     </div>
 
     <div class="card">
-      <h3>Categoría × sector</h3>
+      <h3>Categoría × zona</h3>
       <div class="tabla-scroll">
         <table class="tabla-cruce">
           <thead>
