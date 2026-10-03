@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Misiones Julio 2026 · Parroquia "El Buen Pastor"
+   Censo parroquial · Parroquia "El Buen Pastor"
    ========================================================================== */
 
 :root {
@@ -138,15 +138,11 @@ main {
   color: var(--marron);
 }
 
-/* ---------- Encabezado de día ---------- */
+/* ---------- Encabezado destacado (stats) ---------- */
 
 .dia-encabezado {
   background: linear-gradient(135deg, var(--blanco), var(--dorado-claro));
   border-color: var(--dorado);
-}
-
-.dia-encabezado.especial {
-  background: linear-gradient(135deg, var(--dorado-claro), #f7ecd6);
 }
 
 .dia-encabezado h2 {
@@ -162,68 +158,6 @@ main {
   color: var(--tinta-suave);
   font-size: 0.9rem;
   margin-top: 2px;
-}
-
-/* ---------- Selector de días ---------- */
-
-.selector-dias {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding: 4px 2px 12px;
-  scrollbar-width: none;
-}
-
-.selector-dias::-webkit-scrollbar {
-  display: none;
-}
-
-.dia-chip {
-  flex: 0 0 auto;
-  min-width: 58px;
-  padding: 8px 10px;
-  border-radius: 12px;
-  border: 1px solid var(--linea);
-  background: var(--blanco);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1px;
-  cursor: pointer;
-  color: var(--tinta);
-}
-
-.dia-chip-dow {
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--tinta-suave);
-}
-
-.dia-chip-num {
-  font-size: 1.15rem;
-  font-weight: 700;
-}
-
-.dia-chip-hoy {
-  font-size: 0.55rem;
-  font-weight: 700;
-  color: var(--verde);
-  letter-spacing: 0.08em;
-}
-
-.dia-chip.activo {
-  background: var(--marron);
-  border-color: var(--marron);
-  color: var(--blanco);
-}
-
-.dia-chip.activo .dia-chip-dow {
-  color: var(--dorado-claro);
-}
-
-.dia-chip.activo .dia-chip-hoy {
-  color: var(--dorado-claro);
 }
 
 /* ---------- Listas y badges ---------- */
@@ -263,22 +197,9 @@ main {
   color: var(--marron-oscuro);
 }
 
-.badge.hoy {
-  background: var(--verde);
-  color: var(--blanco);
-  font-size: 0.62rem;
-}
-
 .badge.rol {
   background: var(--crema);
   border: 1px solid var(--linea);
-}
-
-.rol-nota {
-  display: inline-block;
-  margin-left: 8px;
-  font-size: 0.78rem;
-  color: var(--tinta-suave);
 }
 
 .mini-dia {
@@ -288,162 +209,10 @@ main {
   margin-top: 2px;
 }
 
-/* ---------- Personas ---------- */
-
-.personas {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.persona {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  background: var(--crema);
-  border: 1px solid var(--linea);
-  border-radius: 999px;
-  padding: 4px 12px 4px 4px;
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-.avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: var(--marron);
-  color: var(--dorado-claro);
-  font-size: 0.62rem;
-  font-weight: 700;
-  flex: 0 0 auto;
-}
-
-/* ---------- Equipo interno del día ---------- */
-
-.equipo-dia {
-  border-color: var(--dorado);
-}
-
-.asignacion {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 8px 0;
-  border-bottom: 1px dashed var(--linea);
-}
-
-.asignacion:last-child {
-  border-bottom: none;
-}
-
-.asignacion-rol {
-  font-weight: 700;
-  font-size: 0.85rem;
-  color: var(--marron-oscuro);
-}
-
-/* ---------- Selector de seminaristas ---------- */
-
-.selector-seminaristas {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 4px 2px 12px;
-}
-
-.sem-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  border: 1px solid var(--linea);
-  background: var(--blanco);
-  border-radius: 999px;
-  padding: 5px 14px 5px 5px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--tinta);
-  cursor: pointer;
-}
-
-.sem-chip.activo {
-  background: var(--marron);
-  border-color: var(--marron);
-  color: var(--blanco);
-}
-
-.sem-chip.activo .avatar {
-  background: var(--dorado);
-  color: var(--marron-oscuro);
-}
-
 .vacio-card {
   text-align: center;
   color: var(--tinta-suave);
   padding: 28px 16px;
-}
-
-.lista.turnos li strong {
-  color: var(--marron-oscuro);
-}
-
-/* ---------- Misa en latín ---------- */
-
-.ficha-carrusel {
-  background: var(--crema);
-  border-color: var(--dorado);
-  min-height: 260px;
-  display: flex;
-  flex-direction: column;
-}
-
-.ficha-contador {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--marron);
-  margin-bottom: 10px;
-}
-
-.ficha-cue {
-  font-size: 0.82rem;
-  color: var(--tinta-suave);
-  font-style: italic;
-  margin-bottom: 10px;
-}
-
-.ficha-latin {
-  font-weight: 700;
-  color: var(--marron-oscuro);
-  font-size: 1.15rem;
-  margin-bottom: 10px;
-}
-
-.ficha-pron {
-  font-size: 0.85rem;
-  color: var(--tinta-suave);
-  font-style: italic;
-  margin-bottom: 10px;
-}
-
-.ficha-espanol {
-  font-size: 0.95rem;
-  color: var(--tinta);
-  flex: 1;
-}
-
-.ficha-nav {
-  display: flex;
-  gap: 10px;
-  margin-top: 16px;
-}
-
-.ficha-nav button {
-  flex: 1;
 }
 
 /* ---------- Tablas ---------- */
@@ -479,18 +248,6 @@ th {
 
 tbody tr:nth-child(even) {
   background: var(--crema);
-}
-
-.fila-especial {
-  background: var(--dorado-claro) !important;
-}
-
-.col-dia {
-  white-space: nowrap;
-}
-
-.tabla-resumen {
-  min-width: 0;
 }
 
 /* ---------- Censo: formulario ---------- */
@@ -838,16 +595,6 @@ tbody tr:nth-child(even) {
   flex-wrap: wrap;
 }
 
-.aviso-cierre {
-  background: #dcead9;
-  border: 1px solid var(--verde);
-  color: var(--marron-oscuro);
-  border-radius: var(--radio);
-  padding: 12px 14px;
-  font-size: 0.85rem;
-  margin-bottom: 12px;
-}
-
 /* ---------- Estadísticas ---------- */
 
 .stats-estados {
@@ -958,7 +705,6 @@ tbody tr:nth-child(even) {
   }
   .barra-relleno,
   .badge,
-  .fila-especial,
   tbody tr:nth-child(even) {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;

@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Configuración de Supabase (Censo de la Misión)
+   Configuración de Supabase (Censo parroquial)
 
    Cómo obtener estos valores:
    1. Crear el proyecto en https://supabase.com (plan Free).
