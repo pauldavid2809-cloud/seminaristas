@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Configuración de Supabase (Censo parroquial)
+   Configuración de Supabase (Censo · San Benito de Palermo)
 
    Cómo obtener estos valores:
    1. Crear el proyecto en https://supabase.com (plan Free).

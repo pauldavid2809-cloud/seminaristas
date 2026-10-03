@@ -1,11 +1,11 @@
 -- ============================================================================
--- Censo parroquial · Parroquia "El Buen Pastor"
+-- Censo parroquial · Parroquia "San Benito de Palermo"
 -- Pegar este script completo en Supabase → SQL Editor → New query → Run
 -- ============================================================================
 
--- Sectores: EDITAR esta lista con los sectores del censo que se va a hacer
--- (después se agregan más con:
---   insert into sectores (nombre) values ('Nombre del sector');)
+-- Zonas de la parroquia (la tabla se llama "sectores" por historia del código).
+-- EDITAR esta lista si las zonas cambian de nombre; después se agregan más con:
+--   insert into sectores (nombre) values ('Nombre de la zona');
 create table sectores (
   id     serial primary key,
   nombre text not null unique,
@@ -13,8 +13,8 @@ create table sectores (
 );
 
 insert into sectores (nombre) values
-  ('La Chamarreta'), ('Altos II'), ('Altos III'),
-  ('Sol Amado'), ('Las Trinitarias'), ('Cuatricentenario'), ('Raúl Leoni');
+  ('Zona 1'), ('Zona 2'), ('Zona 3'), ('Zona 4'),
+  ('Zona 5'), ('Zona 6'), ('Zona 7'), ('Zona 8');
 
 -- Casa/familia: agrupa los casos de un mismo hogar
 create table casas (
