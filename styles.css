@@ -2075,3 +2075,18 @@ body.pagina-publica {
     padding-top: calc(14px + env(safe-area-inset-top, 0px));
   }
 }
+
+/* "Cómo llegar" se acorta a "Llegar" en teléfonos angostos (390 px) para
+   que las acciones de la tarjeta quepan en una fila */
+.txt-corto {
+  display: none;
+}
+
+@media (max-width: 400px) {
+  .txt-largo {
+    display: none;
+  }
+  .txt-corto {
+    display: inline;
+  }
+}
