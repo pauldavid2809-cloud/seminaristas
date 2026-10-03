@@ -1822,3 +1822,147 @@ body.pagina-publica {
 .diptico-acciones .btn {
   white-space: nowrap;
 }
+
+/* ---------- Mapa: mi ubicación en vivo ---------- */
+
+.mi-ubic {
+  background: var(--superficie);
+  border: 1px solid var(--linea);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+
+.mi-ubic.error {
+  background: var(--ambar-suave);
+  border-color: #f1d28a;
+  color: var(--ambar);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.mi-ubic-cab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mi-ubic-cab > svg {
+  width: 20px;
+  height: 20px;
+  color: var(--ambar);
+}
+
+.mi-ubic:not(.error) .mi-ubic-cab > svg.girando {
+  color: var(--primario);
+}
+
+.mi-ubic-textos {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.mi-ubic-titulo {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--primario-oscuro);
+  line-height: 1.3;
+}
+
+.mi-ubic.error .mi-ubic-titulo {
+  color: var(--ambar);
+  font-size: 0.88rem;
+}
+
+.mi-ubic-sub {
+  font-size: 0.76rem;
+  color: var(--tinta-suave);
+  font-weight: 500;
+}
+
+.zona-punto.grande {
+  width: 16px;
+  height: 16px;
+  box-shadow: 0 0 0 3px rgba(18, 41, 64, 0.08);
+}
+
+.mi-ubic-fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.84rem;
+  color: var(--tinta);
+  padding-top: 9px;
+  margin-top: 9px;
+  border-top: 1px dashed var(--linea);
+}
+
+.mi-ubic-fila .btn,
+.mi-ubic-cab .btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.mapa-general {
+  height: calc(100vh - 420px);
+  height: calc(100dvh - 420px);
+  min-height: 300px;
+}
+
+.mapa-btn-yo.activo {
+  background: var(--primario);
+  color: #fff;
+  border-color: var(--primario);
+}
+
+.pin-yo {
+  width: 18px;
+  height: 18px;
+}
+
+/* Aviso emergente (cambio de zona) */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  top: 76px;
+  z-index: 60;
+  transform: translateX(-50%);
+  background: var(--primario-oscuro);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 11px 18px;
+  border-radius: 999px;
+  box-shadow: var(--sombra-alta);
+  white-space: nowrap;
+  animation: toast-entra 0.22s ease-out;
+}
+
+.toast[hidden] {
+  display: none;
+}
+
+.toast.saliendo {
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+@keyframes toast-entra {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+}
+
+/* El botón flotante "+" ocupa la esquina derecha: el de seguirme va a la izquierda */
+.mapa-btn-yo {
+  left: 12px;
+  right: auto;
+}
