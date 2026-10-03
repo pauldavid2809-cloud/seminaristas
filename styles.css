@@ -1966,3 +1966,32 @@ body.pagina-publica {
   left: 12px;
   right: auto;
 }
+
+/* Santo o advocación de la zona */
+.mi-ubic-santo {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--acento);
+  filter: brightness(0.75);
+}
+
+.popup-casa .popup-santo {
+  font-weight: 700;
+  color: var(--primario) !important;
+  margin-top: 0 !important;
+}
+
+.zona-pill {
+  white-space: normal;
+  text-align: left;
+}
+
+/* Avisos largos (nombres de zona con su santo) en dos líneas si no caben */
+.toast {
+  white-space: normal;
+  text-align: center;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  border-radius: 18px;
+  line-height: 1.35;
+}
