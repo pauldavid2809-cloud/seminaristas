@@ -1,13 +1,15 @@
 /* ==========================================================================
    Zonas pastorales · Parroquia "San Benito de Palermo"
    Generado desde datos/zonas-san-benito.kml (límites dibujados en Google
-   Earth). Coordenadas en [latitud, longitud]. Los nombres deben coincidir
+   Earth). El santo o advocación de cada zona viene del documento
+   "Zonas pastorales y grupos de apostolado" de la parroquia. Coordenadas en [latitud, longitud]. Los nombres deben coincidir
    con los de la tabla "sectores" de Supabase (Zona 1 … Zona 8).
    ========================================================================== */
 
 const ZONAS_GEO = [
   {
     "nombre": "Zona 1",
+    "santo": "San José",
     "color": "#8b4513",
     "poligono": [
       [
@@ -247,6 +249,7 @@ const ZONAS_GEO = [
   },
   {
     "nombre": "Zona 2",
+    "santo": "Corazón de Jesús",
     "color": "#e63946",
     "poligono": [
       [
@@ -462,6 +465,7 @@ const ZONAS_GEO = [
   },
   {
     "nombre": "Zona 3",
+    "santo": "Beato José Gregorio Hernández",
     "color": "#f4a020",
     "poligono": [
       [
@@ -573,6 +577,7 @@ const ZONAS_GEO = [
   },
   {
     "nombre": "Zona 4",
+    "santo": "Divina Pastora",
     "color": "#e040b0",
     "poligono": [
       [
@@ -736,6 +741,7 @@ const ZONAS_GEO = [
   },
   {
     "nombre": "Zona 5",
+    "santo": "Virgen de Lourdes",
     "color": "#f2e61e",
     "poligono": [
       [
@@ -887,6 +893,7 @@ const ZONAS_GEO = [
   },
   {
     "nombre": "Zona 6",
+    "santo": "San Benito de Palermo",
     "color": "#2a96e6",
     "poligono": [
       [
@@ -1086,6 +1093,7 @@ const ZONAS_GEO = [
   },
   {
     "nombre": "Zona 7",
+    "santo": "Divina Misericordia",
     "color": "#96dc3c",
     "poligono": [
       [
@@ -1257,6 +1265,7 @@ const ZONAS_GEO = [
   },
   {
     "nombre": "Zona 8",
+    "santo": "Nuestra Señora de Coromoto",
     "color": "#2a8c3c",
     "poligono": [
       [

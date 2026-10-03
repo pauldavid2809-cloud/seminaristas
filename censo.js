@@ -240,6 +240,12 @@ function zonaGeoPorNombre(nombre) {
   return GEO_ZONAS.find((z) => z.nombre === nombre) || null;
 }
 
+/* "Zona 1" -> "Zona 1 · San José" (santo o advocación de la zona) */
+function zonaConSanto(nombre) {
+  const santo = zonaGeoPorNombre(nombre)?.santo;
+  return santo ? `${nombre} · ${santo}` : nombre;
+}
+
 function colorZona(sectorId) {
   const i = sectoresCenso.findIndex((s) => s.id === sectorId);
   const geo = i >= 0 ? zonaGeoPorNombre(sectoresCenso[i].nombre) : null;
@@ -325,7 +331,7 @@ function agregarCapaZonas(mapa, { interactivas = false, resaltar = "" } = {}) {
       const sector = sectorPorNombre(z.nombre);
       const nCasas = sector ? casasCenso.filter((c) => c.sector_id === sector.id).length : 0;
       poligono.bindPopup(
-        `<div class="popup-casa"><strong>${esc(z.nombre)}</strong><p>${plural(nCasas, "casa censada", "casas censadas")}</p>${
+        `<div class="popup-casa"><strong>${esc(z.nombre)}</strong>${z.santo ? `<p class="popup-santo">${esc(z.santo)}</p>` : ""}<p>${plural(nCasas, "casa censada", "casas censadas")}</p>${
           z.nota ? `<p>${esc(z.nota)}</p>` : ""
         }</div>`
       );
@@ -510,6 +516,7 @@ function exportarExcel() {
     const filas = [];
     casasSector.forEach((casa) => {
       const base = {
+        Zona: zonaConSanto(sector.nombre),
         Familia: casa.familia || "",
         Dirección: casa.direccion,
         Teléfono: formatoLocal(casa.telefono),
@@ -682,7 +689,7 @@ function opcionesSectores(seleccionado) {
   return sectoresCenso
     .map(
       (s) =>
-        `<option value="${s.id}" ${s.id === seleccionado ? "selected" : ""}>${esc(s.nombre)}</option>`
+        `<option value="${s.id}" ${s.id === seleccionado ? "selected" : ""}>${esc(zonaConSanto(s.nombre))}</option>`
     )
     .join("");
 }
@@ -801,7 +808,7 @@ function renderFormulario() {
   } else if (form.modo === "agregar-persona") {
     titulo = "Agregar persona";
     cuerpo = `
-      <p class="form-contexto">${puntoZona(form.casa.sector_id)} ${esc(form.casa.familia || form.casa.direccion)} · ${esc(form.casa.sector)}</p>
+      <p class="form-contexto">${puntoZona(form.casa.sector_id)} ${esc(form.casa.familia || form.casa.direccion)} · ${esc(zonaConSanto(form.casa.sector))}</p>
       <div id="form-personas">${bloquePersona()}</div>
       <button type="button" class="btn btn-suave btn-bloque" data-accion="agregar-bloque">
         ${icono("personaMas")} Agregar otra persona de esta casa
@@ -991,7 +998,7 @@ function pintarZonaDetectada() {
   const elegido = select ? sectoresCenso.find((s) => String(s.id) === select.value) : null;
   if (elegido && elegido.nombre !== geo.nombre) {
     el.className = "ubic-zona aviso";
-    el.innerHTML = `${icono("alerta")}<span>El punto cae en <strong>${esc(geo.nombre)}</strong>, pero elegiste ${esc(
+    el.innerHTML = `${icono("alerta")}<span>El punto cae en <strong>${esc(zonaConSanto(geo.nombre))}</strong>, pero elegiste ${esc(
       elegido.nombre
     )}.</span><button type="button" class="btn btn-secundario btn-chip" data-accion="usar-zona-detectada">Usar ${esc(
       geo.nombre
@@ -999,7 +1006,7 @@ function pintarZonaDetectada() {
   } else {
     el.className = "ubic-zona ok";
     el.innerHTML = `<span class="zona-punto" style="background:${geo.color}"></span><span>Zona detectada por el GPS: <strong>${esc(
-      geo.nombre
+      zonaConSanto(geo.nombre)
     )}</strong></span>`;
   }
 }
@@ -1171,7 +1178,7 @@ function renderFiltros() {
           ${sectoresCenso
             .map(
               (s) =>
-                `<option value="${s.id}" ${String(s.id) === filtros.sector ? "selected" : ""}>${esc(s.nombre)}</option>`
+                `<option value="${s.id}" ${String(s.id) === filtros.sector ? "selected" : ""}>${esc(zonaConSanto(s.nombre))}</option>`
             )
             .join("")}
         </select>
@@ -1282,7 +1289,7 @@ function cardCasa(c) {
         <div class="casa-info">
           <div class="casa-titulo">
             <strong>${esc(c.familia || "Casa")}</strong>
-            <span class="zona-pill">${puntoZona(c.sector_id)}${esc(c.sector)}</span>
+            <span class="zona-pill">${puntoZona(c.sector_id)}${esc(zonaConSanto(c.sector))}</span>
           </div>
           <div class="casa-linea">${icono("pin")}<span>${esc(c.direccion)}</span></div>
           ${
@@ -1294,7 +1301,7 @@ function cardCasa(c) {
           ${(() => {
             const otra = zonaDiscrepante(c);
             return otra
-              ? `<div class="casa-linea ubic-falta">${icono("alerta")}<span>El punto del mapa cae en ${esc(otra.nombre)}</span></div>`
+              ? `<div class="casa-linea ubic-falta">${icono("alerta")}<span>El punto del mapa cae en ${esc(zonaConSanto(otra.nombre))}</span></div>`
               : "";
           })()}
         </div>
@@ -1410,7 +1417,7 @@ function popupCasa(c) {
   return `
     <div class="popup-casa">
       <strong>${esc(c.familia || "Casa")}</strong>
-      <p>${esc(c.sector)} · ${esc(c.direccion)}</p>
+      <p>${esc(zonaConSanto(c.sector))} · ${esc(c.direccion)}</p>
       <p>${plural(c.personas.length, "persona")}${emojis ? ` · ${emojis}` : ""}</p>
       <a class="btn btn-principal" href="${linkComoLlegar(c)}" target="_blank" rel="noopener">Cómo llegar</a>
     </div>`;
@@ -1424,7 +1431,7 @@ function renderMapaBarra() {
         ${sectoresCenso
           .map(
             (s) =>
-              `<option value="${s.id}" ${String(s.id) === mapaZona ? "selected" : ""}>${esc(s.nombre)}</option>`
+              `<option value="${s.id}" ${String(s.id) === mapaZona ? "selected" : ""}>${esc(zonaConSanto(s.nombre))}</option>`
           )
           .join("")}
       </select>
@@ -1444,7 +1451,7 @@ function renderMapa({ enfocar, vistaInicial } = {}) {
   const zonasLeyenda = mapaZona ? sectoresCenso.filter((s) => String(s.id) === mapaZona) : sectoresCenso;
   $("#mapa-pie").innerHTML = `
     <div class="mapa-pie">
-      ${zonasLeyenda.map((s) => `<span class="leyenda">${puntoZona(s.id)}${esc(s.nombre)}</span>`).join("")}
+      ${zonasLeyenda.map((s) => `<span class="leyenda">${puntoZona(s.id)}${esc(zonaConSanto(s.nombre))}</span>`).join("")}
       <span class="mapa-sin-ubic">${plural(ubicadas.length, "casa")} en el mapa${
         sinUbic ? ` · ${plural(sinUbic, "casa")} sin ubicación (agrégala desde la tarjeta de la casa)` : ""
       }</span>
@@ -1615,7 +1622,7 @@ function alMoverme(pos) {
   const zona = GEO_ZONAS.length ? zonaDelPunto(miPos.lat, miPos.lng) : null;
   const nombre = zona ? zona.nombre : null;
   if (miZonaNombre !== undefined && nombre !== miZonaNombre) {
-    mostrarToast(nombre ? `Entraste a la ${nombre}` : "Saliste de las zonas de la parroquia");
+    mostrarToast(nombre ? `Entraste a la ${zonaConSanto(nombre)}` : "Saliste de las zonas de la parroquia");
   }
   miZonaNombre = nombre;
 
@@ -1688,13 +1695,15 @@ function renderMiUbicacion() {
   let cabecera;
   if (zona) {
     cabecera = `<span class="zona-punto grande" style="background:${zona.color}"></span>
-      <div class="mi-ubic-textos"><span class="mi-ubic-titulo">Estás en la <strong>${esc(zona.nombre)}</strong></span>`;
+      <div class="mi-ubic-textos"><span class="mi-ubic-titulo">Estás en la <strong>${esc(zona.nombre)}</strong></span>${
+        zona.santo ? `<span class="mi-ubic-santo">${esc(zona.santo)}</span>` : ""
+      }`;
   } else {
     const cercana = zonaMasCercana(miPos.lat, miPos.lng);
     cabecera = `${icono("alerta")}
       <div class="mi-ubic-textos"><span class="mi-ubic-titulo">Estás fuera de las 8 zonas</span>${
         cercana
-          ? `<span class="mi-ubic-sub">La más cercana es la <strong>${esc(cercana.zona.nombre)}</strong>, a ${formatoDistancia(cercana.metros)}</span>`
+          ? `<span class="mi-ubic-sub">La más cercana es la <strong>${esc(zonaConSanto(cercana.zona.nombre))}</strong>, a ${formatoDistancia(cercana.metros)}</span>`
           : ""
       }`;
   }
@@ -1791,7 +1800,7 @@ function renderStats() {
         ${sectoresCenso
           .map(
             (s) =>
-              `<option value="${s.id}" ${String(s.id) === statsSector ? "selected" : ""}>${esc(s.nombre)}</option>`
+              `<option value="${s.id}" ${String(s.id) === statsSector ? "selected" : ""}>${esc(zonaConSanto(s.nombre))}</option>`
           )
           .join("")}
       </select>
@@ -1800,7 +1809,7 @@ function renderStats() {
   const encabezadoImpresion = `
     <div class="stats-print-header">
       <h1>Parroquia "San Benito de Palermo" · Arquidiócesis de Maracaibo</h1>
-      <p>Estadísticas del censo${nombreSectorActivo ? ` · Zona: ${esc(nombreSectorActivo)}` : " · Todas las zonas"}</p>
+      <p>Estadísticas del censo${nombreSectorActivo ? ` · ${esc(zonaConSanto(nombreSectorActivo))}` : " · Todas las zonas"}</p>
       <p>Generado el ${new Date().toLocaleDateString("es-VE", { day: "numeric", month: "long", year: "numeric" })}</p>
     </div>`;
 
@@ -1867,7 +1876,7 @@ function renderStats() {
     </div>
 
     <div class="card">
-      <h3>Seguimiento${nombreSectorActivo ? ` · ${esc(nombreSectorActivo)}` : ""}</h3>
+      <h3>Seguimiento${nombreSectorActivo ? ` · ${esc(zonaConSanto(nombreSectorActivo))}` : ""}</h3>
       <div class="stats-estados">
         <span class="badge ${ESTADOS.pendiente.clase}">Pendientes: ${porEstado.pendiente}</span>
         <span class="badge ${ESTADOS.en_proceso.clase}">En proceso: ${porEstado.en_proceso}</span>
@@ -1889,7 +1898,7 @@ function renderStats() {
       ${nombresSectores
         .map((s) =>
           barra(
-            `${puntoZona(porSector[s].id)}${esc(s)}`,
+            `${puntoZona(porSector[s].id)}${esc(zonaConSanto(s))}`,
             porSector[s].personas,
             maxSector,
             ` <span class="barra-extra">· ${plural(porSector[s].casas, "casa")}</span>`
@@ -1917,7 +1926,7 @@ function renderStats() {
       <div class="tabla-scroll">
         <table class="tabla-cruce">
           <thead>
-            <tr><th>Categoría</th>${nombresSectores.map((s) => `<th>${esc(s)}</th>`).join("")}<th>Total</th></tr>
+            <tr><th>Categoría</th>${nombresSectores.map((s) => `<th title="${esc(zonaConSanto(s))}">${esc(s)}</th>`).join("")}<th>Total</th></tr>
           </thead>
           <tbody>
             ${CATEGORIAS.map((c) => {
