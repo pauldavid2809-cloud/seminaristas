@@ -144,6 +144,7 @@ const ICONOS = {
   casa: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/>',
   persona: '<circle cx="12" cy="8" r="3.8"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/>',
   mas: '<path d="M12 5v14M5 12h14"/>',
+  navegar: '<path d="M12 2 4.5 20.3l.7.7L12 18l6.8 3 .7-.7z"/>',
   libro: '<path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/>',
   wifiNo: '<path d="M2 8.5a15 15 0 0 1 5-3M22 8.5A15 15 0 0 0 12 5M5.5 12a10 10 0 0 1 3-2M18.5 12a10 10 0 0 0-4-2.3M9 15.5a5 5 0 0 1 6 0M12 19.5v.5M3 3l18 18"/>',
 };
@@ -472,6 +473,7 @@ async function refrescarStats() {
 }
 
 async function refrescarMapa(opciones = {}) {
+  renderMiUbicacion();
   if (!CENSO_CONFIGURADO || !sb) {
     renderMapa(opciones);
     return;
@@ -1398,7 +1400,6 @@ async function eliminarCasa(id) {
 let mapaGeneral = null;
 let capaCasas = null;
 let marcadoresCasa = {};
-let pinYo = null;
 let mapaZona = "";
 let capaZonasGeneral = null;
 
@@ -1431,8 +1432,9 @@ function renderMapaBarra() {
     </div>`;
 }
 
-function renderMapa({ enfocar } = {}) {
+function renderMapa({ enfocar, vistaInicial } = {}) {
   if (enfocar) mapaZona = "";
+  mapaEnfocandoCasa = Boolean(enfocar);
   renderMapaBarra();
 
   const casas = mapaZona ? casasCenso.filter((c) => String(c.sector_id) === mapaZona) : casasCenso;
@@ -1457,9 +1459,16 @@ function renderMapa({ enfocar } = {}) {
   if (!mapaGeneral) {
     mapaGeneral = L.map(el, { zoomControl: true }).setView(CENTRO_PARROQUIA, 16);
     agregarCapasBase(mapaGeneral);
-    /* las casas van por encima de los números de zona y de la parroquia */
+    /* las casas van por encima de los números de zona y de la parroquia,
+       y tu posición por encima de todo */
     mapaGeneral.createPane("casas").style.zIndex = 650;
+    mapaGeneral.createPane("yo").style.zIndex = 660;
+    mapaGeneral.getPane("yo").style.pointerEvents = "none";
+    mapaGeneral.on("dragstart", () => {
+      if (seguirme) activarSeguirme(false);
+    });
   }
+  dibujarMiPosicion();
   const nombreZona = mapaZona ? sectoresCenso.find((s) => String(s.id) === mapaZona)?.nombre || "" : "";
   if (capaZonasGeneral) mapaGeneral.removeLayer(capaZonasGeneral);
   capaZonasGeneral = agregarCapaZonas(mapaGeneral, { interactivas: true, resaltar: nombreZona });
@@ -1487,6 +1496,9 @@ function renderMapa({ enfocar } = {}) {
     if (destino) {
       mapaGeneral.setView(destino.getLatLng(), 18);
       destino.openPopup();
+    } else if (vistaInicial && miPos && cercaDeLaParroquia(miPos)) {
+      /* al abrir el mapa con tu posición ya conocida, te muestra a ti */
+      mapaGeneral.setView([miPos.lat, miPos.lng], 17);
     } else {
       /* encuadra la zona elegida (o las 8) junto con sus casas */
       const limites = limitesZonas(nombreZona);
@@ -1498,19 +1510,251 @@ function renderMapa({ enfocar } = {}) {
   }, 80);
 }
 
-function centrarmeEnMapa() {
-  if (!mapaGeneral || !("geolocation" in navigator)) return;
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      const punto = [pos.coords.latitude, pos.coords.longitude];
-      const iconoYo = L.divIcon({ className: "", html: '<div class="pin-yo"></div>', iconSize: [16, 16] });
-      if (pinYo) pinYo.setLatLng(punto);
-      else pinYo = L.marker(punto, { icon: iconoYo, interactive: false }).addTo(mapaGeneral);
-      mapaGeneral.setView(punto, 17);
-    },
-    (err) => alert(mensajeErrorGPS(err)),
-    { enableHighAccuracy: true, timeout: GPS_ESPERA_MS, maximumAge: 30000 }
-  );
+/* ---------- Mi ubicación en el mapa (en vivo) ---------- */
+
+/* El seguimiento corre solo con la pestaña Mapa abierta y la pantalla
+   encendida, para no gastar batería. */
+let miPos = null; // { lat, lng, precision }
+let miWatch = null;
+let miError = "";
+let miPin = null;
+let miCirculo = null;
+let miZonaNombre;
+let seguirme = false;
+let miPrimeraVez = true;
+let mapaEnfocandoCasa = false;
+
+/* Hasta esta distancia de la parroquia, al abrir el mapa se centra en ti */
+const RADIO_CERCA_PARROQUIA_M = 3000;
+
+function distanciaMetros(lat1, lng1, lat2, lng2) {
+  const r = 6371000;
+  const rad = Math.PI / 180;
+  const dLat = (lat2 - lat1) * rad;
+  const dLng = (lng2 - lng1) * rad;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLng / 2) ** 2;
+  return 2 * r * Math.asin(Math.sqrt(a));
+}
+
+/* Distancia del punto al borde de un polígono (proyección local en metros) */
+function distanciaAPoligono(lat, lng, poligono) {
+  const kx = 111320 * Math.cos((lat * Math.PI) / 180);
+  const ky = 110540;
+  let minimo = Infinity;
+  for (let i = 0, j = poligono.length - 1; i < poligono.length; j = i++) {
+    const ax = (poligono[j][1] - lng) * kx;
+    const ay = (poligono[j][0] - lat) * ky;
+    const bx = (poligono[i][1] - lng) * kx;
+    const by = (poligono[i][0] - lat) * ky;
+    const dx = bx - ax;
+    const dy = by - ay;
+    const largo2 = dx * dx + dy * dy;
+    const t = largo2 ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / largo2)) : 0;
+    minimo = Math.min(minimo, Math.hypot(ax + t * dx, ay + t * dy));
+  }
+  return minimo;
+}
+
+function zonaMasCercana(lat, lng) {
+  let mejor = null;
+  GEO_ZONAS.forEach((z) => {
+    const metros = distanciaAPoligono(lat, lng, z.poligono);
+    if (!mejor || metros < mejor.metros) mejor = { zona: z, metros };
+  });
+  return mejor;
+}
+
+function formatoDistancia(m) {
+  if (m < 1000) return `${Math.max(10, Math.round(m / 10) * 10)} m`;
+  return `${(m / 1000).toFixed(1).replace(".", ",")} km`;
+}
+
+function cercaDeLaParroquia(pos) {
+  return GEO_PARROQUIA
+    ? distanciaMetros(pos.lat, pos.lng, GEO_PARROQUIA.lat, GEO_PARROQUIA.lng) <= RADIO_CERCA_PARROQUIA_M
+    : true;
+}
+
+function iniciarMiUbicacion() {
+  if (miWatch != null) return;
+  if (!("geolocation" in navigator)) {
+    miError = "Este teléfono no permite obtener la ubicación.";
+    renderMiUbicacion();
+    return;
+  }
+  miError = "";
+  miPrimeraVez = true;
+  renderMiUbicacion();
+  miWatch = navigator.geolocation.watchPosition(alMoverme, errorMiUbicacion, {
+    enableHighAccuracy: true,
+    maximumAge: 5000,
+    timeout: 20000,
+  });
+}
+
+function detenerMiUbicacion() {
+  if (miWatch != null && navigator.geolocation) navigator.geolocation.clearWatch(miWatch);
+  miWatch = null;
+}
+
+function errorMiUbicacion(err) {
+  /* un tiempo de espera con una posición ya conocida no es un problema */
+  if (err && err.code === 3 && miPos) return;
+  if (err && err.code === 1) detenerMiUbicacion();
+  miError =
+    err && err.code === 1
+      ? "Para verte en el mapa, permite el acceso a la ubicación en el navegador."
+      : mensajeErrorGPS(err);
+  renderMiUbicacion();
+}
+
+function alMoverme(pos) {
+  miError = "";
+  miPos = { lat: pos.coords.latitude, lng: pos.coords.longitude, precision: pos.coords.accuracy };
+
+  const zona = GEO_ZONAS.length ? zonaDelPunto(miPos.lat, miPos.lng) : null;
+  const nombre = zona ? zona.nombre : null;
+  if (miZonaNombre !== undefined && nombre !== miZonaNombre) {
+    mostrarToast(nombre ? `Entraste a la ${nombre}` : "Saliste de las zonas de la parroquia");
+  }
+  miZonaNombre = nombre;
+
+  dibujarMiPosicion();
+  if (mapaGeneral) {
+    if (seguirme) {
+      mapaGeneral.panTo([miPos.lat, miPos.lng]);
+    } else if (miPrimeraVez && !mapaEnfocandoCasa && cercaDeLaParroquia(miPos)) {
+      mapaGeneral.setView([miPos.lat, miPos.lng], Math.max(mapaGeneral.getZoom(), 17));
+    }
+    miPrimeraVez = false;
+  }
+  renderMiUbicacion();
+}
+
+function dibujarMiPosicion() {
+  if (!mapaGeneral || !miPos) return;
+  const punto = [miPos.lat, miPos.lng];
+  if (!miPin) {
+    miCirculo = L.circle(punto, {
+      pane: "yo",
+      radius: miPos.precision,
+      color: "#2563eb",
+      weight: 1,
+      fillColor: "#2563eb",
+      fillOpacity: 0.12,
+      interactive: false,
+    }).addTo(mapaGeneral);
+    miPin = L.marker(punto, {
+      pane: "yo",
+      interactive: false,
+      icon: L.divIcon({ className: "", html: '<div class="pin-yo"></div>', iconSize: [18, 18], iconAnchor: [9, 9] }),
+    }).addTo(mapaGeneral);
+  } else {
+    miPin.setLatLng(punto);
+    miCirculo.setLatLng(punto).setRadius(miPos.precision);
+  }
+}
+
+function activarSeguirme(activo) {
+  seguirme = activo;
+  if (seguirme && mapaGeneral && miPos) {
+    mapaGeneral.setView([miPos.lat, miPos.lng], Math.max(mapaGeneral.getZoom(), 17));
+  }
+  $(".mapa-btn-yo")?.classList.toggle("activo", seguirme);
+  renderMiUbicacion();
+}
+
+function renderMiUbicacion() {
+  const cont = $("#mapa-yo");
+  if (!cont) return;
+
+  if (miError && !miPos) {
+    cont.innerHTML = `
+      <div class="mi-ubic error">
+        <div class="mi-ubic-cab">${icono("alerta")}<span class="mi-ubic-titulo">${esc(miError)}</span></div>
+        <button class="btn btn-secundario btn-chip" data-accion="mapa-reintentar-ubic">${icono("recargar")} Reintentar</button>
+      </div>`;
+    return;
+  }
+  if (!miPos) {
+    cont.innerHTML = `
+      <div class="mi-ubic">
+        <div class="mi-ubic-cab">${icono("cargando", "girando")}<span class="mi-ubic-titulo">Buscando tu ubicación…</span></div>
+      </div>`;
+    return;
+  }
+
+  const zona = GEO_ZONAS.length ? zonaDelPunto(miPos.lat, miPos.lng) : null;
+  let cabecera;
+  if (zona) {
+    cabecera = `<span class="zona-punto grande" style="background:${zona.color}"></span>
+      <div class="mi-ubic-textos"><span class="mi-ubic-titulo">Estás en la <strong>${esc(zona.nombre)}</strong></span>`;
+  } else {
+    const cercana = zonaMasCercana(miPos.lat, miPos.lng);
+    cabecera = `${icono("alerta")}
+      <div class="mi-ubic-textos"><span class="mi-ubic-titulo">Estás fuera de las 8 zonas</span>${
+        cercana
+          ? `<span class="mi-ubic-sub">La más cercana es la <strong>${esc(cercana.zona.nombre)}</strong>, a ${formatoDistancia(cercana.metros)}</span>`
+          : ""
+      }`;
+  }
+  cabecera += `<span class="mi-ubic-sub">En vivo · precisión ±${Math.round(miPos.precision)} m</span></div>`;
+
+  let filaParroquia = "";
+  if (GEO_PARROQUIA) {
+    const metros = distanciaMetros(miPos.lat, miPos.lng, GEO_PARROQUIA.lat, GEO_PARROQUIA.lng);
+    filaParroquia = `
+      <div class="mi-ubic-fila">
+        <span>⛪ A <strong>${formatoDistancia(metros)}</strong> de la parroquia</span>
+        <a class="btn btn-suave btn-chip" href="https://www.google.com/maps/dir/?api=1&destination=${GEO_PARROQUIA.lat},${GEO_PARROQUIA.lng}&travelmode=walking"
+           target="_blank" rel="noopener">${icono("ruta")} Cómo llegar</a>
+      </div>`;
+  }
+
+  let filaCasas = "";
+  const sector = zona ? sectorPorNombre(zona.nombre) : null;
+  if (sector) {
+    const casasZona = casasCenso.filter((c) => c.sector_id === sector.id);
+    const conPendientes = casasZona.filter((c) => c.personas.some((p) => p.estado === "pendiente")).length;
+    filaCasas = `
+      <div class="mi-ubic-fila">
+        <span>🏠 <strong>${plural(casasZona.length, "casa censada", "casas censadas")}</strong> en esta zona${
+          conPendientes ? ` · ${plural(conPendientes, "con pendientes", "con pendientes")}` : ""
+        }</span>
+        ${
+          casasZona.length
+            ? `<button class="btn btn-suave btn-chip" data-accion="ver-casas-zona" data-id="${sector.id}">Ver casas</button>`
+            : ""
+        }
+      </div>`;
+  }
+
+  cont.innerHTML = `
+    <div class="mi-ubic">
+      <div class="mi-ubic-cab">
+        ${cabecera}
+        <button class="btn btn-chip ${seguirme ? "btn-principal" : "btn-secundario"}" data-accion="mapa-seguir"
+                aria-pressed="${seguirme}" title="El mapa te sigue mientras caminas">${icono("navegar")} ${seguirme ? "Siguiéndote" : "Seguirme"}</button>
+      </div>
+      ${filaParroquia}
+      ${filaCasas}
+    </div>`;
+}
+
+let temporizadorToast = null;
+
+function mostrarToast(texto) {
+  const el = $("#toast");
+  if (!el) return;
+  el.textContent = texto;
+  el.hidden = false;
+  el.classList.remove("saliendo");
+  clearTimeout(temporizadorToast);
+  temporizadorToast = setTimeout(() => {
+    el.classList.add("saliendo");
+    setTimeout(() => (el.hidden = true), 250);
+  }, 3500);
+  if (navigator.vibrate) navigator.vibrate(60);
 }
 
 /* ---------- Estadísticas ---------- */
@@ -1751,6 +1995,8 @@ function mostrarVista(id) {
   });
   $("#fab").classList.toggle("oculto", id === "stats" || id === "palabra");
   $("#fab").classList.toggle("compacto", id === "mapa");
+  if (id === "mapa") iniciarMiUbicacion();
+  else detenerMiUbicacion();
   window.scrollTo({ top: 0 });
 }
 
@@ -1758,7 +2004,7 @@ function irA(id, opciones) {
   mostrarVista(id);
   if (id === "censo") refrescarCenso();
   if (id === "stats") refrescarStats();
-  if (id === "mapa") refrescarMapa(opciones);
+  if (id === "mapa") refrescarMapa({ vistaInicial: true, ...opciones });
   if (id === "palabra") renderPalabra();
 }
 
@@ -1858,7 +2104,19 @@ document.addEventListener("click", (ev) => {
       refrescarMapa({ recargar: true });
       break;
     case "mapa-centrarme":
-      centrarmeEnMapa();
+      if (miPos) activarSeguirme(true);
+      else iniciarMiUbicacion();
+      break;
+    case "mapa-seguir":
+      activarSeguirme(!seguirme);
+      break;
+    case "mapa-reintentar-ubic":
+      detenerMiUbicacion();
+      iniciarMiUbicacion();
+      break;
+    case "ver-casas-zona":
+      filtros.sector = String(id);
+      irA("censo");
       break;
     case "actualizar-stats":
       refrescarStats();
@@ -1884,6 +2142,7 @@ document.addEventListener("change", (ev) => {
     renderLista();
   } else if (el.id === "mapa-filtro-zona") {
     mapaZona = el.value;
+    miPrimeraVez = false;
     renderMapa();
   } else if (el.id === "palabra-selector") {
     palabraId = el.value;
@@ -1913,6 +2172,10 @@ window.addEventListener("online", () => {
   sincronizarPendientes();
 });
 window.addEventListener("offline", renderEstadoRed);
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) detenerMiUbicacion();
+  else if (vistaActual === "mapa") iniciarMiUbicacion();
+});
 
 renderEstadoRed();
 renderGuiaCenso();
