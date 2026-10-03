@@ -5,7 +5,8 @@ Webapp de censo casa por casa (Arquidiócesis de Maracaibo) para las **8 zonas**
 ## Qué incluye
 
 - **Ubicación de cada casa**: al registrar una casa la app toma el punto GPS del teléfono (afina unos segundos hasta tener buena precisión). El punto se puede corregir arrastrando el pin o tocando el mapa, con vista de calles o satélite. Cada casa con ubicación tiene botones de **Cómo llegar** (Google Maps) y **Ver en mapa**.
-- **Mapa**: todas las casas censadas en un mapa, con un color por zona, filtro por zona y botón para centrarse en la propia ubicación.
+- **Zonas pastorales**: los límites de las 8 zonas y la ubicación de la parroquia vienen de [`datos/zonas-san-benito.kml`](datos/zonas-san-benito.kml) (dibujado en Google Earth) y se usan desde [`zonas.js`](zonas.js). Al marcar una casa, la app **detecta sola en qué zona cae** y la elige en el formulario; si se elige otra a mano o el punto queda fuera de las 8 zonas, lo avisa. Las tarjetas también avisan si el punto de una casa cae en otra zona distinta a la asignada.
+- **Mapa**: las 8 zonas dibujadas con sus colores y números, la parroquia, y todas las casas censadas; filtro por zona (resalta la zona elegida) y botón para centrarse en la propia ubicación.
 - **Casas**: registro de las casas visitadas y sus personas — enfermos, niños para Primera Comunión y Confirmación, personas vulnerables, bautizos pendientes, matrimonios por regularizar y unción/comunión a enfermos. Los datos se comparten entre todos los teléfonos (Supabase). Cada persona tiene estado de seguimiento (pendiente / en proceso / atendido) y botón de WhatsApp con mensaje personalizado según sus categorías. Si se registra sin señal, queda guardado en el teléfono y se envía al recuperar conexión. Incluye la guía de preguntas para la visita y la exportación a Excel (una hoja por zona, con coordenadas y enlace a Google Maps de cada casa).
 - **Stats**: estadísticas del censo en vivo — totales por categoría, por zona, por día, y la tabla categoría × zona para organizar el seguimiento. Incluye un botón para descargar un PDF.
 
@@ -20,7 +21,11 @@ Es una página estática, sin dependencias: abre `index.html` en el navegador, o
 3. **Project Settings → API**: copiar la *Project URL* y la *anon public key*, y pegarlas en [`config.js`](config.js).
 4. Para renombrar una zona después: SQL Editor → `update sectores set nombre = 'Nombre nuevo' where nombre = 'Zona 1';` — y para agregar otra: `insert into sectores (nombre) values ('Nombre de la zona');`
 
-> Nota: en la base de datos las zonas viven en la tabla `sectores` (nombre heredado del código original).
+> Nota: en la base de datos las zonas viven en la tabla `sectores` (nombre heredado del código original). Los nombres deben coincidir con los del KML (`Zona 1` … `Zona 8`) para que la detección y los colores funcionen.
+
+### Actualizar los límites de las zonas
+
+Si se redibujan las zonas en Google Earth, exportar el KML, reemplazar `datos/zonas-san-benito.kml` y regenerar `zonas.js` con las mismas coordenadas (cada polígono como lista de `[latitud, longitud]`). Si cambia el nombre de una zona, cambiarlo también en la tabla `sectores`.
 
 ## Reutilizar la estructura para un censo nuevo
 

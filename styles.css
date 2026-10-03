@@ -1483,3 +1483,70 @@ tbody tr:nth-child(even) {
 .ubic-botones .btn {
   white-space: nowrap;
 }
+
+/* ---------- Zonas pastorales ---------- */
+
+.ubic-zona {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 9px 12px;
+  border-radius: var(--radio-sm);
+  margin-bottom: 10px;
+}
+
+.ubic-zona[hidden] {
+  display: none;
+}
+
+.ubic-zona.ok {
+  background: var(--primario-suave);
+  color: var(--primario);
+}
+
+.ubic-zona.aviso {
+  background: var(--ambar-suave);
+  color: var(--ambar);
+}
+
+.ubic-zona svg {
+  width: 17px;
+  height: 17px;
+}
+
+.ubic-zona .zona-punto {
+  width: 10px;
+  height: 10px;
+}
+
+.etiqueta-zona span {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2.5px solid;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--primario-oscuro);
+  font-size: 0.78rem;
+  font-weight: 800;
+  box-shadow: 0 1px 4px rgba(18, 41, 64, 0.3);
+}
+
+.pin-parroquia {
+  display: grid;
+  place-items: center;
+  font-size: 1.25rem;
+  background: #fff;
+  border: 2px solid var(--acento);
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(18, 41, 64, 0.35);
+}
+
+.ubic-zona > span:not(.zona-punto) {
+  flex: 1 1 180px;
+  min-width: 0;
+}

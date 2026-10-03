@@ -1,7 +1,7 @@
 /* ==========================================================================
    Censo parroquial · Parroquia "San Benito de Palermo"
-   Registro de casas y personas por zona, con ubicación GPS, mapa y
-   estadísticas (Supabase + Leaflet)
+   Registro de casas y personas por zona, con ubicación GPS, mapa de las
+   zonas pastorales y estadísticas (Supabase + Leaflet; límites en zonas.js)
    (la tabla "sectores" de la base de datos guarda las zonas)
    ========================================================================== */
 
@@ -29,8 +29,12 @@ const SALUDO_WA =
 
 const LS_PENDIENTES = "censo_pendientes";
 
+/* Límites de las zonas pastorales (zonas.js, generado desde el KML) */
+const GEO_ZONAS = typeof ZONAS_GEO !== "undefined" ? ZONAS_GEO : [];
+const GEO_PARROQUIA = typeof PARROQUIA_GEO !== "undefined" ? PARROQUIA_GEO : null;
+
 /* Centro por defecto de los mapas mientras no haya casas con ubicación */
-const CENTRO_MARACAIBO = [10.6427, -71.6125];
+const CENTRO_PARROQUIA = GEO_PARROQUIA ? [GEO_PARROQUIA.lat, GEO_PARROQUIA.lng] : [10.6427, -71.6125];
 
 /* Precisión (en metros) a partir de la cual se deja de afinar el GPS */
 const GPS_PRECISION_BUENA = 20;
@@ -101,7 +105,8 @@ const ESTADOS = {
   atendido: { etiqueta: "Atendido", clase: "est-atendido" },
 };
 
-/* Un color por zona, en el orden en que se listan (Zona 1 … Zona 8) */
+/* Respaldo si una zona de la base no está en zonas.js; normalmente cada
+   zona usa el color con que se dibujó en el KML */
 const COLORES_ZONA = [
   "#2563eb",
   "#d97706",
@@ -229,9 +234,42 @@ function linkVerEnGoogleMaps(casa) {
   return `https://www.google.com/maps?q=${casa.lat},${casa.lng}`;
 }
 
+function zonaGeoPorNombre(nombre) {
+  return GEO_ZONAS.find((z) => z.nombre === nombre) || null;
+}
+
 function colorZona(sectorId) {
   const i = sectoresCenso.findIndex((s) => s.id === sectorId);
+  const geo = i >= 0 ? zonaGeoPorNombre(sectoresCenso[i].nombre) : null;
+  if (geo) return geo.color;
   return COLORES_ZONA[(i < 0 ? 0 : i) % COLORES_ZONA.length];
+}
+
+/* Punto en polígono (trazado de rayos); polígono en [lat, lng] */
+function puntoEnPoligono(lat, lng, poligono) {
+  let dentro = false;
+  for (let i = 0, j = poligono.length - 1; i < poligono.length; j = i++) {
+    const [yi, xi] = poligono[i];
+    const [yj, xj] = poligono[j];
+    if (yi > lat !== yj > lat && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) dentro = !dentro;
+  }
+  return dentro;
+}
+
+/* Zona pastoral (de zonas.js) que contiene el punto, o null si cae fuera */
+function zonaDelPunto(lat, lng) {
+  return GEO_ZONAS.find((z) => puntoEnPoligono(lat, lng, z.poligono)) || null;
+}
+
+function sectorPorNombre(nombre) {
+  return sectoresCenso.find((s) => s.nombre === nombre) || null;
+}
+
+/* Si la casa tiene ubicación y el punto cae en otra zona, devuelve esa zona */
+function zonaDiscrepante(casa) {
+  if (!tieneUbicacion(casa) || !GEO_ZONAS.length) return null;
+  const geo = zonaDelPunto(casa.lat, casa.lng);
+  return geo && geo.nombre !== casa.sector ? geo : null;
 }
 
 function puntoZona(sectorId) {
@@ -262,6 +300,64 @@ function agregarCapasBase(mapa) {
   L.control.layers({ Calles: calles, Satélite: satelite }, null, { position: "topright" }).addTo(mapa);
 }
 
+function iconoParroquia() {
+  return L.divIcon({ className: "pin-parroquia", html: "⛪", iconSize: [34, 34], iconAnchor: [17, 17] });
+}
+
+/* Dibuja las zonas pastorales y la parroquia. Con interactivas = false los
+   toques atraviesan los polígonos (en el formulario se toca el mapa para
+   marcar la casa). */
+function agregarCapaZonas(mapa, { interactivas = false, resaltar = "" } = {}) {
+  const grupo = L.layerGroup().addTo(mapa);
+  GEO_ZONAS.forEach((z) => {
+    const atenuada = resaltar && resaltar !== z.nombre;
+    const poligono = L.polygon(z.poligono, {
+      color: z.color,
+      weight: atenuada ? 1.5 : 2.5,
+      opacity: atenuada ? 0.45 : 0.95,
+      fillColor: z.color,
+      fillOpacity: atenuada ? 0.05 : 0.16,
+      interactive: interactivas,
+    }).addTo(grupo);
+    if (interactivas) {
+      const sector = sectorPorNombre(z.nombre);
+      const nCasas = sector ? casasCenso.filter((c) => c.sector_id === sector.id).length : 0;
+      poligono.bindPopup(
+        `<div class="popup-casa"><strong>${esc(z.nombre)}</strong><p>${plural(nCasas, "casa censada", "casas censadas")}</p>${
+          z.nota ? `<p>${esc(z.nota)}</p>` : ""
+        }</div>`
+      );
+    }
+    if (z.etiqueta) {
+      L.marker(z.etiqueta, {
+        interactive: false,
+        icon: L.divIcon({
+          className: "etiqueta-zona",
+          html: `<span style="border-color:${z.color}">${esc(z.nombre.replace("Zona ", ""))}</span>`,
+          iconSize: [26, 26],
+          iconAnchor: [13, 13],
+        }),
+      }).addTo(grupo);
+    }
+  });
+  if (GEO_PARROQUIA) {
+    L.marker([GEO_PARROQUIA.lat, GEO_PARROQUIA.lng], {
+      icon: iconoParroquia(),
+      interactive: interactivas,
+      zIndexOffset: 500,
+    })
+      .bindPopup(`<div class="popup-casa"><strong>${esc(GEO_PARROQUIA.nombre)}</strong></div>`)
+      .addTo(grupo);
+  }
+  return grupo;
+}
+
+function limitesZonas(nombre = "") {
+  const zonas = nombre ? GEO_ZONAS.filter((z) => z.nombre === nombre) : GEO_ZONAS;
+  if (!zonas.length) return null;
+  return L.latLngBounds(zonas.flatMap((z) => z.poligono));
+}
+
 /* ---------- Estado del módulo ---------- */
 
 let sectoresCenso = [];
@@ -279,6 +375,8 @@ let gpsWatchId = null;
 let gpsTemporizador = null;
 let mapaForm = null;
 let pinForm = null;
+/* true cuando la persona eligió la zona a mano: el GPS ya no la cambia */
+let zonaElegidaAMano = false;
 
 let vistaActual = "censo";
 
@@ -629,6 +727,7 @@ function seccionUbicacion() {
     <div class="form-seccion">
       <span class="form-seccion-titulo">${icono("pin")} Ubicación de la casa</span>
       <div id="ubic-estado" class="ubic-estado"></div>
+      <div id="ubic-zona" class="ubic-zona" hidden></div>
       <div id="form-mapa" class="form-mapa"></div>
       <div class="ubic-botones">
         <button type="button" class="btn btn-suave" data-accion="capturar-ubicacion">${icono("gps")} Usar mi GPS</button>
@@ -734,7 +833,9 @@ function renderFormulario() {
       form.modo === "editar-casa" && tieneUbicacion(form.casa)
         ? { lat: form.casa.lat, lng: form.casa.lng, precision: form.casa.precision_m }
         : null;
+    zonaElegidaAMano = form.modo === "editar-casa";
     pintarEstadoUbic();
+    pintarZonaDetectada();
     /* el mapa se crea cuando la hoja ya tiene su tamaño final */
     setTimeout(iniciarMapaForm, 60);
     if (form.modo === "nueva-casa") capturarUbicacion();
@@ -858,6 +959,46 @@ function pintarEstadoUbic(tipo, texto) {
   const iconos = { ok: "check", buscando: "cargando", error: "alerta", aviso: "alerta" };
   el.className = `ubic-estado ${tipo}`;
   el.innerHTML = `${icono(iconos[tipo] || "pin", tipo === "buscando" ? "girando" : "")}<span>${texto}</span>`;
+  pintarZonaDetectada();
+}
+
+/* Según el punto marcado: elige la zona sola (si no se eligió a mano) o
+   avisa si el punto cae en otra zona o fuera de las 8 zonas */
+function pintarZonaDetectada() {
+  const el = $("#ubic-zona");
+  if (!el) return;
+  if (!formUbic || !GEO_ZONAS.length) {
+    el.hidden = true;
+    return;
+  }
+  const select = $("#censo-form .fc-sector");
+  const geo = zonaDelPunto(formUbic.lat, formUbic.lng);
+  el.hidden = false;
+
+  if (!geo) {
+    el.className = "ubic-zona aviso";
+    el.innerHTML = `${icono("alerta")}<span>El punto está fuera de las 8 zonas de la parroquia. Revisa el pin.</span>`;
+    return;
+  }
+  const sector = sectorPorNombre(geo.nombre);
+  if (sector && select && (!zonaElegidaAMano || !select.value)) {
+    select.value = String(sector.id);
+    zonaElegidaAMano = false;
+  }
+  const elegido = select ? sectoresCenso.find((s) => String(s.id) === select.value) : null;
+  if (elegido && elegido.nombre !== geo.nombre) {
+    el.className = "ubic-zona aviso";
+    el.innerHTML = `${icono("alerta")}<span>El punto cae en <strong>${esc(geo.nombre)}</strong>, pero elegiste ${esc(
+      elegido.nombre
+    )}.</span><button type="button" class="btn btn-secundario btn-chip" data-accion="usar-zona-detectada">Usar ${esc(
+      geo.nombre
+    )}</button>`;
+  } else {
+    el.className = "ubic-zona ok";
+    el.innerHTML = `<span class="zona-punto" style="background:${geo.color}"></span><span>Zona detectada por el GPS: <strong>${esc(
+      geo.nombre
+    )}</strong></span>`;
+  }
 }
 
 function mensajeErrorGPS(err) {
@@ -962,9 +1103,10 @@ function iniciarMapaForm() {
     el.innerHTML = `<div class="mapa-fallback">El mapa necesita internet. Igual se guardan las coordenadas del GPS.</div>`;
     return;
   }
-  const centro = formUbic ? [formUbic.lat, formUbic.lng] : centroCenso() || CENTRO_MARACAIBO;
-  mapaForm = L.map(el, { zoomControl: true }).setView(centro, formUbic ? 18 : centroCenso() ? 16 : 13);
+  const centro = formUbic ? [formUbic.lat, formUbic.lng] : centroCenso() || CENTRO_PARROQUIA;
+  mapaForm = L.map(el, { zoomControl: true }).setView(centro, formUbic ? 18 : 16);
   agregarCapasBase(mapaForm);
+  agregarCapaZonas(mapaForm);
   mapaForm.on("click", (ev) => {
     detenerGPS();
     ponerUbicForm({ lat: ev.latlng.lat, lng: ev.latlng.lng, precision: null }, false);
@@ -1138,6 +1280,12 @@ function cardCasa(c) {
               : ""
           }
           ${c.notas ? `<div class="casa-linea">📝 <span>${esc(c.notas)}</span></div>` : ""}
+          ${(() => {
+            const otra = zonaDiscrepante(c);
+            return otra
+              ? `<div class="casa-linea ubic-falta">${icono("alerta")}<span>El punto del mapa cae en ${esc(otra.nombre)}</span></div>`
+              : "";
+          })()}
         </div>
       </div>
       <div class="casa-acciones">
@@ -1242,6 +1390,7 @@ let capaCasas = null;
 let marcadoresCasa = {};
 let pinYo = null;
 let mapaZona = "";
+let capaZonasGeneral = null;
 
 function popupCasa(c) {
   const emojis = [...new Set(c.personas.flatMap((p) => p.categorias))]
@@ -1296,18 +1445,24 @@ function renderMapa({ enfocar } = {}) {
   }
 
   if (!mapaGeneral) {
-    mapaGeneral = L.map(el, { zoomControl: true }).setView(CENTRO_MARACAIBO, 13);
+    mapaGeneral = L.map(el, { zoomControl: true }).setView(CENTRO_PARROQUIA, 16);
     agregarCapasBase(mapaGeneral);
-    capaCasas = L.layerGroup().addTo(mapaGeneral);
+    /* las casas van por encima de los números de zona y de la parroquia */
+    mapaGeneral.createPane("casas").style.zIndex = 650;
   }
+  const nombreZona = mapaZona ? sectoresCenso.find((s) => String(s.id) === mapaZona)?.nombre || "" : "";
+  if (capaZonasGeneral) mapaGeneral.removeLayer(capaZonasGeneral);
+  capaZonasGeneral = agregarCapaZonas(mapaGeneral, { interactivas: true, resaltar: nombreZona });
+  if (capaCasas) mapaGeneral.removeLayer(capaCasas);
+  capaCasas = L.layerGroup().addTo(mapaGeneral);
 
-  capaCasas.clearLayers();
   marcadoresCasa = {};
   ubicadas.forEach((c) => {
     const m = L.circleMarker([c.lat, c.lng], {
+      pane: "casas",
       radius: 9,
-      color: "#ffffff",
-      weight: 2.5,
+      color: "#122940",
+      weight: 2,
       fillColor: colorZona(c.sector_id),
       fillOpacity: 1,
     }).bindPopup(popupCasa(c));
@@ -1322,11 +1477,13 @@ function renderMapa({ enfocar } = {}) {
     if (destino) {
       mapaGeneral.setView(destino.getLatLng(), 18);
       destino.openPopup();
-    } else if (ubicadas.length) {
-      mapaGeneral.fitBounds(
-        L.latLngBounds(ubicadas.map((c) => [c.lat, c.lng])),
-        { padding: [36, 36], maxZoom: 17 }
-      );
+    } else {
+      /* encuadra la zona elegida (o las 8) junto con sus casas */
+      const limites = limitesZonas(nombreZona);
+      ubicadas.forEach((c) => (limites ? limites.extend([c.lat, c.lng]) : null));
+      if (limites) mapaGeneral.fitBounds(limites, { padding: [24, 24], maxZoom: 18 });
+      else if (ubicadas.length)
+        mapaGeneral.fitBounds(L.latLngBounds(ubicadas.map((c) => [c.lat, c.lng])), { padding: [36, 36], maxZoom: 17 });
     }
   }, 80);
 }
@@ -1618,6 +1775,14 @@ document.addEventListener("click", (ev) => {
     case "quitar-ubicacion":
       quitarUbicacion();
       break;
+    case "usar-zona-detectada": {
+      const geo = formUbic && zonaDelPunto(formUbic.lat, formUbic.lng);
+      const sector = geo && sectorPorNombre(geo.nombre);
+      if (sector) $("#censo-form .fc-sector").value = String(sector.id);
+      zonaElegidaAMano = false;
+      pintarZonaDetectada();
+      break;
+    }
     case "filtro-cat":
       filtros.categoria = el.dataset.cat;
       renderFiltros();
@@ -1676,6 +1841,9 @@ document.addEventListener("change", (ev) => {
   const el = ev.target;
   if (el.dataset.accion === "cambiar-estado") {
     cambiarEstado(el.dataset.id, el.value);
+  } else if (el.classList.contains("fc-sector")) {
+    zonaElegidaAMano = true;
+    pintarZonaDetectada();
   } else if (el.id === "filtro-sector") {
     filtros.sector = el.value;
     renderLista();
