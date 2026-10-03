@@ -1995,3 +1995,83 @@ body.pagina-publica {
   border-radius: 18px;
   line-height: 1.35;
 }
+
+/* ---------- Consentimiento de la familia ---------- */
+
+.consentimiento {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--acento-claro);
+  border: 1px solid #ecd49a;
+  border-radius: var(--radio);
+  padding: 14px;
+  margin: 12px 0;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: var(--primario-oscuro);
+  cursor: pointer;
+}
+
+.consentimiento input {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  margin-top: 1px;
+  accent-color: var(--primario);
+  cursor: pointer;
+}
+
+/* ---------- Instalar la app ---------- */
+
+.aviso-instalar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--superficie);
+  border: 1px solid var(--acento);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+  padding: 12px 12px 12px 14px;
+  margin-bottom: 12px;
+}
+
+.aviso-instalar img {
+  border-radius: 12px;
+  border: 1px solid var(--linea);
+  flex: 0 0 auto;
+}
+
+.aviso-instalar-texto {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  font-size: 0.8rem;
+  color: var(--tinta-suave);
+  line-height: 1.4;
+}
+
+.aviso-instalar-texto strong:first-child {
+  font-size: 0.9rem;
+  color: var(--primario-oscuro);
+}
+
+.aviso-instalar-botones {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.aviso-instalar-botones .btn-icono {
+  width: 32px;
+  height: 32px;
+}
+
+/* En la app instalada se respeta la barra de estado del teléfono */
+@media (display-mode: standalone) {
+  .appbar {
+    padding-top: calc(14px + env(safe-area-inset-top, 0px));
+  }
+}

@@ -12,8 +12,8 @@
   <link rel="icon" href="img/logo-san-benito.jpg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
-  <link rel="stylesheet" href="styles.css?v=17" />
+  <link rel="stylesheet" crossorigin="anonymous" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
+  <link rel="stylesheet" href="styles.css?v=22" />
 </head>
 <!-- Página pública: solo muestra el díptico. No carga el censo ni Supabase. -->
 <body class="pagina-publica">
@@ -61,6 +61,7 @@
       });
 
       pintar();
+      if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function () {});
     })();
   </script>
 </body>

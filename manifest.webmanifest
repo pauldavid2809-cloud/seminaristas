@@ -1,0 +1,17 @@
+{
+  "name": "Censo · Parroquia San Benito de Palermo",
+  "short_name": "Censo SBP",
+  "description": "Censo casa por casa de las 8 zonas pastorales de la Parroquia San Benito de Palermo.",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3f5f9",
+  "theme_color": "#1d3a5f",
+  "icons": [
+    { "src": "img/icono-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "img/icono-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "img/icono-adaptable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
