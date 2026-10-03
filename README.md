@@ -27,9 +27,25 @@ Es una página estática, sin dependencias: abre `index.html` en el navegador, o
 
 > Nota: en la base de datos las zonas viven en la tabla `sectores` (nombre heredado del código original). Los nombres deben coincidir con los del KML (`Zona 1` … `Zona 8`) para que la detección y los colores funcionen.
 
-### Actualizar los límites de las zonas
+### Límites de las zonas ajustados a las calles
 
-Si se redibujan las zonas en Google Earth, exportar el KML, reemplazar `datos/zonas-san-benito.kml` y regenerar `zonas.js` con las mismas coordenadas (cada polígono como lista de `[latitud, longitud]`). Si cambia el nombre de una zona, cambiarlo también en la tabla `sectores`.
+Los límites de `zonas.js` no son el dibujo a mano tal cual: [`herramientas/ajustar_zonas.py`](herramientas/ajustar_zonas.py) los ajusta a las calles reales de OpenStreetMap (`datos/calles-osm.json`) con las reglas acordadas con la parroquia:
+
+1. **Los límites van por calles**: cada manzana va entera a la zona que más la cubre en el dibujo. Donde OpenStreetMap no tiene calles (callejones sin mapear) se respeta el trazo original.
+2. **Una calle límite es completa de una sola zona** (las dos aceras): la que la tenía en el dibujo. El límite se corre al fondo de las casas de la acera de enfrente (30 m).
+3. **Calle 86**: las dos aceras son de la parroquia; las zonas 3, 4 y 6 llegan hasta ella y se quedan con su acera sur.
+4. Sin rendijas ni solapes entre zonas.
+
+El resultado también queda en `datos/zonas-ajustadas.kml` para revisarlo en Google Earth.
+
+Para volver a generarlo (por ejemplo, si se redibuja el KML o se mapean calles nuevas en OpenStreetMap):
+
+```
+pip install shapely pyproj
+python3 herramientas/ajustar_zonas.py --descargar-calles
+```
+
+Si cambia el nombre de una zona, cambiarlo también en la tabla `sectores`.
 
 ## Publicar cambios en la app instalada
 
