@@ -4,7 +4,9 @@ Webapp de censo casa por casa (Arquidiócesis de Maracaibo) para las **8 zonas**
 
 ## Qué incluye
 
-- **Censo**: registro de las casas visitadas y sus personas — enfermos, niños para Primera Comunión y Confirmación, personas vulnerables, bautizos pendientes, matrimonios por regularizar y unción/comunión a enfermos. Los datos se comparten entre todos los teléfonos (Supabase). Cada persona tiene estado de seguimiento (pendiente / en proceso / atendido) y botón de WhatsApp con mensaje personalizado según sus categorías. Si se registra sin señal, queda guardado en el teléfono y se envía al recuperar conexión. Incluye la guía de preguntas para la visita y la exportación a Excel (una hoja por zona).
+- **Ubicación de cada casa**: al registrar una casa la app toma el punto GPS del teléfono (afina unos segundos hasta tener buena precisión). El punto se puede corregir arrastrando el pin o tocando el mapa, con vista de calles o satélite. Cada casa con ubicación tiene botones de **Cómo llegar** (Google Maps) y **Ver en mapa**.
+- **Mapa**: todas las casas censadas en un mapa, con un color por zona, filtro por zona y botón para centrarse en la propia ubicación.
+- **Casas**: registro de las casas visitadas y sus personas — enfermos, niños para Primera Comunión y Confirmación, personas vulnerables, bautizos pendientes, matrimonios por regularizar y unción/comunión a enfermos. Los datos se comparten entre todos los teléfonos (Supabase). Cada persona tiene estado de seguimiento (pendiente / en proceso / atendido) y botón de WhatsApp con mensaje personalizado según sus categorías. Si se registra sin señal, queda guardado en el teléfono y se envía al recuperar conexión. Incluye la guía de preguntas para la visita y la exportación a Excel (una hoja por zona, con coordenadas y enlace a Google Maps de cada casa).
 - **Stats**: estadísticas del censo en vivo — totales por categoría, por zona, por día, y la tabla categoría × zona para organizar el seguimiento. Incluye un botón para descargar un PDF.
 
 ## Cómo usarla

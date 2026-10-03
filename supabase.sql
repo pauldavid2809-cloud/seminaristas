@@ -24,6 +24,9 @@ create table casas (
   familia        text,          -- apellido o "familia Pérez" (opcional)
   telefono       text,          -- guardado en formato WhatsApp (58412...)
   notas          text,
+  lat            double precision check (lat between -90 and 90),    -- ubicación GPS
+  lng            double precision check (lng between -180 and 180),
+  precision_m    real check (precision_m >= 0),  -- precisión del GPS (null = marcada a mano)
   eliminado      boolean not null default false,
   creado_en      timestamptz not null default now(),
   actualizado_en timestamptz not null default now()
