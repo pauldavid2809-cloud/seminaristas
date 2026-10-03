@@ -1390,6 +1390,7 @@ tbody tr:nth-child(even) {
   .hoja,
   #vista-censo,
   #vista-mapa,
+  #vista-palabra,
   .no-imprimir {
     display: none !important;
   }
@@ -1549,4 +1550,275 @@ tbody tr:nth-child(even) {
 .ubic-zona > span:not(.zona-punto) {
   flex: 1 1 180px;
   min-width: 0;
+}
+
+/* ---------- Logo de la parroquia ---------- */
+
+.appbar-logo {
+  background: #fff;
+  border: 2px solid var(--acento);
+  overflow: hidden;
+  padding: 1px;
+}
+
+.appbar-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* ---------- Palabra: díptico de la semana ---------- */
+
+.diptico-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--tinta-suave);
+}
+
+.diptico-selector select {
+  width: 100%;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-sm);
+  padding: 11px 36px 11px 13px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: var(--tinta);
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--superficie)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235e6b7b' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")
+    no-repeat right 12px center / 16px;
+}
+
+.aviso-palabra {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--primario-suave);
+  color: var(--primario);
+  border-radius: var(--radio);
+  padding: 12px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.aviso-palabra > svg {
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+}
+
+.aviso-palabra span svg {
+  width: 15px;
+  height: 15px;
+  vertical-align: -3px;
+  color: #16a34a;
+}
+
+.diptico {
+  background: var(--superficie);
+  border: 1px solid var(--linea);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.diptico-portada {
+  text-align: center;
+  padding: 26px 20px 22px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(217, 164, 65, 0.22), transparent 60%),
+    linear-gradient(160deg, var(--primario-oscuro), var(--primario) 75%);
+  color: #fff;
+}
+
+.diptico-logo {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--acento);
+  object-fit: contain;
+  padding: 3px;
+  margin-bottom: 10px;
+}
+
+.diptico-sobre {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--acento-claro);
+}
+
+.diptico-portada h2 {
+  font-size: 1.55rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  margin: 8px 0 6px;
+}
+
+.diptico-cita {
+  font-weight: 700;
+  color: var(--acento);
+  font-size: 0.95rem;
+}
+
+.diptico-tiempo {
+  font-size: 0.8rem;
+  opacity: 0.85;
+  margin-top: 6px;
+}
+
+.diptico-acciones {
+  display: flex;
+  gap: 8px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--linea);
+  background: var(--fondo);
+  flex-wrap: wrap;
+}
+
+.diptico-acciones .btn {
+  flex: 1 1 160px;
+}
+
+.btn-whatsapp-grande {
+  background: #22c55e;
+  color: #fff;
+}
+
+.diptico-seccion {
+  padding: 18px 18px 6px;
+  border-bottom: 1px solid var(--linea);
+}
+
+.diptico-seccion:last-child {
+  border-bottom: none;
+  padding-bottom: 18px;
+}
+
+.diptico-seccion h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--primario-oscuro);
+  margin-bottom: 10px;
+}
+
+.diptico-seccion p {
+  font-size: 0.95rem;
+  line-height: 1.65;
+  margin-bottom: 12px;
+  color: var(--tinta);
+}
+
+.diptico-encabezado {
+  font-style: italic;
+  color: var(--tinta-suave) !important;
+}
+
+.diptico-cierre {
+  font-weight: 700;
+  color: var(--primario) !important;
+}
+
+.diptico-intro {
+  font-weight: 600;
+  color: var(--tinta-suave) !important;
+}
+
+.diptico-preguntas,
+.diptico-vive,
+.diptico-horarios {
+  margin: 0 0 12px 0;
+  padding-left: 22px;
+}
+
+.diptico-preguntas li,
+.diptico-vive li {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  margin-bottom: 8px;
+}
+
+.diptico-vive strong {
+  color: var(--primario);
+}
+
+.diptico-oracion blockquote {
+  font-size: 1rem;
+  font-style: italic;
+  line-height: 1.6;
+  color: var(--primario-oscuro);
+  background: var(--acento-claro);
+  border-left: 4px solid var(--acento);
+  border-radius: 0 var(--radio-sm) var(--radio-sm) 0;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.diptico-horarios {
+  list-style: none;
+  padding-left: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.diptico-horarios li {
+  background: var(--primario-suave);
+  color: var(--primario);
+  font-weight: 700;
+  font-size: 0.88rem;
+  padding: 6px 12px;
+  border-radius: 999px;
+}
+
+.btn-diptico {
+  background: #dcfce7;
+  border-color: #bbf7d0;
+  color: #15803d;
+}
+
+/* ---------- Página pública del díptico ---------- */
+
+body.pagina-publica {
+  padding-bottom: 24px;
+}
+
+.pie-publico {
+  text-align: center;
+  font-size: 0.76rem;
+  color: var(--tinta-tenue);
+  margin: 8px 0 16px;
+}
+
+/* Acciones de la tarjeta de casa en una sola fila en teléfonos */
+.casa-acciones {
+  gap: 6px;
+}
+
+.casa-acciones .btn-icono {
+  width: 34px;
+  height: 34px;
+}
+
+.casa-acciones .btn-icono svg {
+  width: 17px;
+  height: 17px;
+}
+
+.diptico-acciones .btn {
+  white-space: nowrap;
 }

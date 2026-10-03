@@ -8,6 +8,7 @@ Webapp de censo casa por casa (Arquidiócesis de Maracaibo) para las **8 zonas**
 - **Zonas pastorales**: los límites de las 8 zonas y la ubicación de la parroquia vienen de [`datos/zonas-san-benito.kml`](datos/zonas-san-benito.kml) (dibujado en Google Earth) y se usan desde [`zonas.js`](zonas.js). Al marcar una casa, la app **detecta sola en qué zona cae** y la elige en el formulario; si se elige otra a mano o el punto queda fuera de las 8 zonas, lo avisa. Las tarjetas también avisan si el punto de una casa cae en otra zona distinta a la asignada.
 - **Mapa**: las 8 zonas dibujadas con sus colores y números, la parroquia, y todas las casas censadas; filtro por zona (resalta la zona elegida) y botón para centrarse en la propia ubicación.
 - **Casas**: registro de las casas visitadas y sus personas — enfermos, niños para Primera Comunión y Confirmación, personas vulnerables, bautizos pendientes, matrimonios por regularizar y unción/comunión a enfermos. Los datos se comparten entre todos los teléfonos (Supabase). Cada persona tiene estado de seguimiento (pendiente / en proceso / atendido) y botón de WhatsApp con mensaje personalizado según sus categorías. Si se registra sin señal, queda guardado en el teléfono y se envía al recuperar conexión. Incluye la guía de preguntas para la visita y la exportación a Excel (una hoja por zona, con coordenadas y enlace a Google Maps de cada casa).
+- **Palabra**: el díptico de evangelización de la semana (Evangelio del domingo, reflexión, preguntas para conversar en familia, oración, "Vive esta Palabra", horarios de misa e invitación a la Lectio Divina), con selector de dípticos anteriores. Cada casa con teléfono tiene un botón verde 📖 que envía el díptico por WhatsApp con el nombre de la familia. El enlace del mensaje lleva a [`palabra.html`](palabra.html), una **página pública que solo muestra el díptico** (no carga el censo ni Supabase), para no exponer datos de las familias.
 - **Stats**: estadísticas del censo en vivo — totales por categoría, por zona, por día, y la tabla categoría × zona para organizar el seguimiento. Incluye un botón para descargar un PDF.
 
 ## Cómo usarla
@@ -26,6 +27,14 @@ Es una página estática, sin dependencias: abre `index.html` en el navegador, o
 ### Actualizar los límites de las zonas
 
 Si se redibujan las zonas en Google Earth, exportar el KML, reemplazar `datos/zonas-san-benito.kml` y regenerar `zonas.js` con las mismas coordenadas (cada polígono como lista de `[latitud, longitud]`). Si cambia el nombre de una zona, cambiarlo también en la tabla `sectores`.
+
+## Agregar el díptico de cada semana
+
+1. Guardar el .docx del díptico (misma estructura de siempre: portada, Proclamación del Evangelio, Reflexión pastoral, Para conversar en familia, Oración, Vive esta Palabra esta semana, Te esperamos).
+2. Ejecutar: `python3 herramientas/diptico_a_app.py ruta/al/diptico.docx`
+3. El script guarda el .docx y sus datos en `datos/dipticos/AAAA-MM-DD.*` (fecha del domingo) y regenera `dipticos.js`. Subir los cambios a `main` y GitHub Pages lo publica.
+
+La app muestra sola el díptico de la semana: el más reciente cuyo domingo cae dentro de los próximos 6 días.
 
 ## Reutilizar la estructura para un censo nuevo
 

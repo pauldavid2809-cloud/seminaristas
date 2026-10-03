@@ -144,6 +144,7 @@ const ICONOS = {
   casa: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/>',
   persona: '<circle cx="12" cy="8" r="3.8"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/>',
   mas: '<path d="M12 5v14M5 12h14"/>',
+  libro: '<path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/>',
   wifiNo: '<path d="M2 8.5a15 15 0 0 1 5-3M22 8.5A15 15 0 0 0 12 5M5.5 12a10 10 0 0 1 3-2M18.5 12a10 10 0 0 0-4-2.3M9 15.5a5 5 0 0 1 6 0M12 19.5v.5M3 3l18 18"/>',
 };
 
@@ -1263,6 +1264,14 @@ function accionesUbicacion(c) {
   return `<button class="btn btn-secundario btn-chip ubic-falta" data-accion="editar-casa" data-id="${c.id}">${icono("pin")} Agregar ubicación</button>`;
 }
 
+function botonEnviarDiptico(c) {
+  const d = typeof dipticoActual === "function" ? dipticoActual() : null;
+  if (!d || !c.telefono) return "";
+  return `<a class="btn btn-icono btn-diptico" href="${linkWhatsAppDiptico(d, c.telefono, saludoFamilia(c.familia))}"
+             target="_blank" rel="noopener" title="Enviar el díptico «${esc(d.titulo)}» por WhatsApp"
+             aria-label="Enviar díptico por WhatsApp">${icono("libro")}</a>`;
+}
+
 function cardCasa(c) {
   return `
     <div class="card casa-card">
@@ -1291,6 +1300,7 @@ function cardCasa(c) {
       <div class="casa-acciones">
         ${accionesUbicacion(c)}
         <span class="espaciador"></span>
+        ${botonEnviarDiptico(c)}
         <button class="btn btn-icono" data-accion="persona-en-casa" data-id="${c.id}" title="Agregar persona" aria-label="Agregar persona">${icono("personaMas")}</button>
         <button class="btn btn-icono" data-accion="editar-casa" data-id="${c.id}" title="Editar casa" aria-label="Editar casa">${icono("editar")}</button>
         <button class="btn btn-icono peligro" data-accion="eliminar-casa" data-id="${c.id}" title="Quitar casa" aria-label="Quitar casa">${icono("borrar")}</button>
@@ -1685,6 +1695,27 @@ function renderStats() {
     </div>`;
 }
 
+/* ---------- Palabra (díptico de la semana) ---------- */
+
+let palabraId = "";
+
+function renderPalabra() {
+  const cont = $("#palabra-contenido");
+  const semana = typeof dipticoActual === "function" ? dipticoActual() : null;
+  const d = (palabraId && dipticoPorId(palabraId)) || semana;
+  if (!d) {
+    cont.innerHTML = `<div class="card vacio-card"><span class="vacio-icono">📖</span>Todavía no hay dípticos cargados.</div>`;
+    return;
+  }
+  cont.innerHTML = `
+    ${htmlSelectorDipticos(d.id, semana && semana.id)}
+    <div class="aviso-palabra">
+      ${icono("libro")}
+      <span>Para enviarlo a una familia, toca el botón verde ${icono("libro")} en la tarjeta de su casa: el mensaje sale con su nombre y su teléfono.</span>
+    </div>
+    ${htmlDiptico(d)}`;
+}
+
 /* ---------- Sin configurar / sin conexión ---------- */
 
 function renderSinConfigurar(sel) {
@@ -1718,7 +1749,7 @@ function mostrarVista(id) {
   document.querySelectorAll(".tab").forEach((t) => {
     t.classList.toggle("activo", t.dataset.vista === id);
   });
-  $("#fab").classList.toggle("oculto", id === "stats");
+  $("#fab").classList.toggle("oculto", id === "stats" || id === "palabra");
   $("#fab").classList.toggle("compacto", id === "mapa");
   window.scrollTo({ top: 0 });
 }
@@ -1728,6 +1759,7 @@ function irA(id, opciones) {
   if (id === "censo") refrescarCenso();
   if (id === "stats") refrescarStats();
   if (id === "mapa") refrescarMapa(opciones);
+  if (id === "palabra") renderPalabra();
 }
 
 /* ---------- Eventos (delegación) ---------- */
@@ -1853,6 +1885,10 @@ document.addEventListener("change", (ev) => {
   } else if (el.id === "mapa-filtro-zona") {
     mapaZona = el.value;
     renderMapa();
+  } else if (el.id === "palabra-selector") {
+    palabraId = el.value;
+    renderPalabra();
+    window.scrollTo({ top: 0 });
   } else if (el.id === "stats-filtro-sector") {
     statsSector = el.value;
     renderStats();

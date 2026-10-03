@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#1d3a5f" />
+  <title>Palabra de la semana · Parroquia San Benito de Palermo</title>
+  <meta name="description" content="Díptico de evangelización de la Parroquia San Benito de Palermo: Evangelio del domingo, reflexión, oración y horarios de misa." />
+  <meta property="og:title" content="Palabra de la semana · Parroquia San Benito de Palermo" />
+  <meta property="og:description" content="Evangelio del domingo, reflexión, oración y horarios de misa." />
+  <meta property="og:image" content="https://pauldavid2809-cloud.github.io/seminaristas/img/logo-san-benito.jpg" />
+  <link rel="icon" href="img/logo-san-benito.jpg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
+  <link rel="stylesheet" href="styles.css?v=17" />
+</head>
+<!-- Página pública: solo muestra el díptico. No carga el censo ni Supabase. -->
+<body class="pagina-publica">
+  <header class="appbar">
+    <div class="appbar-marca">
+      <span class="appbar-logo"><img src="img/logo-san-benito.jpg" alt="" /></span>
+      <div>
+        <p class="appbar-sobre">Parroquia San Benito de Palermo</p>
+        <h1 class="appbar-titulo">Palabra de la semana</h1>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div id="palabra-selector-publico"></div>
+    <div id="palabra-publica"></div>
+    <p class="pie-publico">Parroquia San Benito de Palermo · Arquidiócesis de Maracaibo</p>
+  </main>
+
+  <script src="dipticos.js?v=1"></script>
+  <script src="palabra.js?v=2"></script>
+  <script>
+    (function () {
+      const pedido = new URLSearchParams(location.search).get("d");
+      const semana = dipticoActual();
+      let d = (pedido && dipticoPorId(pedido)) || semana;
+
+      function pintar() {
+        const cont = document.querySelector("#palabra-publica");
+        if (!d) {
+          cont.innerHTML = '<div class="card vacio-card">Todavía no hay dípticos publicados.</div>';
+          return;
+        }
+        document.querySelector("#palabra-selector-publico").innerHTML = htmlSelectorDipticos(d.id, semana && semana.id);
+        cont.innerHTML = htmlDiptico(d);
+        document.title = d.titulo + " · Parroquia San Benito de Palermo";
+      }
+
+      document.addEventListener("change", function (ev) {
+        if (ev.target.id !== "palabra-selector") return;
+        d = dipticoPorId(ev.target.value);
+        history.replaceState(null, "", "?d=" + encodeURIComponent(d.id));
+        pintar();
+        window.scrollTo({ top: 0 });
+      });
+
+      pintar();
+    })();
+  </script>
+</body>
+</html>
