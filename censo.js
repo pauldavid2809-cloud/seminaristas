@@ -1053,7 +1053,7 @@ function pintarEstadoUbic(tipo, texto) {
       tipo = "ok";
       texto =
         formUbic.precision != null
-          ? `Ubicación guardada · precisión ±${Math.round(formUbic.precision)} m`
+          ? `Ubicación guardada · precisión ±${Math.round(formUbic.precision)}&nbsp;m`
           : "Ubicación marcada en el mapa";
     } else {
       tipo = "";
@@ -1135,7 +1135,7 @@ function capturarUbicacion() {
     if (mejor.precision > GPS_PRECISION_DUDOSA) {
       pintarEstadoUbic(
         "aviso",
-        `Precisión baja (±${Math.round(mejor.precision)} m). Revisa el pin y muévelo si hace falta.`
+        `Precisión baja (±${Math.round(mejor.precision)}&nbsp;m). Revisa el pin y muévelo si hace falta.`
       );
     } else {
       pintarEstadoUbic();
@@ -1161,7 +1161,7 @@ function capturarUbicacion() {
       if (!mejor || lectura.precision < mejor.precision) {
         mejor = lectura;
         ponerUbicForm(lectura, true);
-        pintarEstadoUbic("buscando", `Afinando ubicación… ±${Math.round(lectura.precision)} m`);
+        pintarEstadoUbic("buscando", `Afinando ubicación… ±${Math.round(lectura.precision)}&nbsp;m`);
       }
       if (lectura.precision <= GPS_PRECISION_BUENA) terminar();
     },
@@ -1361,7 +1361,7 @@ function cardPersona(p, casa) {
 function accionesUbicacion(c) {
   if (tieneUbicacion(c)) {
     return `
-      <a class="btn btn-principal btn-chip" href="${linkComoLlegar(c)}" target="_blank" rel="noopener">${icono("ruta")} Cómo llegar</a>
+      <a class="btn btn-principal btn-chip" href="${linkComoLlegar(c)}" target="_blank" rel="noopener">${icono("ruta")} <span class="txt-largo">Cómo llegar</span><span class="txt-corto">Llegar</span></a>
       <button class="btn btn-icono" data-accion="ver-en-mapa" data-id="${c.id}" title="Ver en mapa" aria-label="Ver en mapa">${icono("mapa")}</button>`;
   }
   return `<button class="btn btn-secundario btn-chip ubic-falta" data-accion="editar-casa" data-id="${c.id}">${icono("pin")} Agregar ubicación</button>`;
@@ -1676,8 +1676,8 @@ function zonaMasCercana(lat, lng) {
 }
 
 function formatoDistancia(m) {
-  if (m < 1000) return `${Math.max(10, Math.round(m / 10) * 10)} m`;
-  return `${(m / 1000).toFixed(1).replace(".", ",")} km`;
+  if (m < 1000) return `${Math.max(10, Math.round(m / 10) * 10)}&nbsp;m`;
+  return `${(m / 1000).toFixed(1).replace(".", ",")}&nbsp;km`;
 }
 
 function cercaDeLaParroquia(pos) {
@@ -1811,7 +1811,7 @@ function renderMiUbicacion() {
           : ""
       }`;
   }
-  cabecera += `<span class="mi-ubic-sub">En vivo · precisión ±${Math.round(miPos.precision)} m</span></div>`;
+  cabecera += `<span class="mi-ubic-sub">En vivo · precisión ±${Math.round(miPos.precision)}&nbsp;m</span></div>`;
 
   let filaParroquia = "";
   if (GEO_PARROQUIA) {
