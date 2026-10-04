@@ -339,10 +339,6 @@ function agregarCapaZonas(mapa, { interactivas = false, resaltar = "" } = {}) {
       poligono.bindPopup(
         `<div class="popup-casa"><strong>${esc(z.nombre)}</strong>${z.santo ? `<p class="popup-santo">${esc(z.santo)}</p>` : ""}<p>${plural(nCasas, "casa censada", "casas censadas")}</p>${
           z.nota ? `<p>${esc(z.nota)}</p>` : ""
-        }${
-          typeof canalDeZona === "function" && canalDeZona(z.nombre)
-            ? `<a class="btn btn-canal-popup" href="${canalDeZona(z.nombre)}" target="_blank" rel="noopener">📢 Canal de la zona</a>`
-            : ""
         }</div>`
       );
     }
@@ -364,7 +360,13 @@ function agregarCapaZonas(mapa, { interactivas = false, resaltar = "" } = {}) {
       interactive: interactivas,
       zIndexOffset: 500,
     })
-      .bindPopup(`<div class="popup-casa"><strong>${esc(GEO_PARROQUIA.nombre)}</strong></div>`)
+      .bindPopup(
+        `<div class="popup-casa"><strong>${esc(GEO_PARROQUIA.nombre)}</strong>${
+          typeof CANAL_PARROQUIA === "string"
+            ? `<a class="btn btn-canal-popup" href="${CANAL_PARROQUIA}" target="_blank" rel="noopener">📢 Canal de la parroquia</a>`
+            : ""
+        }</div>`
+      )
       .addTo(grupo);
   }
   return grupo;
@@ -1380,14 +1382,12 @@ function botonEnviarDiptico(c) {
              aria-label="Enviar díptico por WhatsApp">${icono("libro")}</a>`;
 }
 
-/* Invitar a la casa al canal de WhatsApp de su zona */
+/* Invitar a la casa al canal de WhatsApp de la parroquia */
 function botonCanal(c) {
-  const url = typeof canalDeZona === "function" ? canalDeZona(c.sector) : null;
-  if (!url || !c.telefono) return "";
-  const zona = zonaConSanto(c.sector);
-  return `<a class="btn btn-icono btn-canal" href="${linkWhatsApp(c.telefono, mensajeCanal(zona, url, saludoFamilia(c.familia)))}"
-             target="_blank" rel="noopener" title="Invitar al canal de WhatsApp de la ${esc(zona)}"
-             aria-label="Invitar al canal de la zona por WhatsApp">${icono("megafono")}</a>`;
+  if (typeof CANAL_PARROQUIA !== "string" || !c.telefono) return "";
+  return `<a class="btn btn-icono btn-canal" href="${linkWhatsApp(c.telefono, mensajeCanal(zonaConSanto(c.sector), saludoFamilia(c.familia)))}"
+             target="_blank" rel="noopener" title="Invitar al canal de WhatsApp de la parroquia"
+             aria-label="Invitar al canal de la parroquia por WhatsApp">${icono("megafono")}</a>`;
 }
 
 function cardCasa(c) {
