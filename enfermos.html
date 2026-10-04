@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#1d3a5f" />
+  <title>Visita a enfermos · San Benito de Palermo</title>
+  <link rel="icon" href="img/logo-san-benito.jpg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" crossorigin="anonymous" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
+  <link rel="stylesheet" crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+  <link rel="stylesheet" href="styles.css?v=24" />
+</head>
+<!-- Registro rápido de enfermos: guarda en el mismo censo (casa + persona "enfermo") -->
+<body class="pagina-enfermos">
+  <header class="appbar">
+    <div class="appbar-marca">
+      <span class="appbar-logo"><img src="img/logo-san-benito.jpg" alt="" /></span>
+      <div>
+        <p class="appbar-sobre">Parroquia San Benito de Palermo</p>
+        <h1 class="appbar-titulo">Visita a enfermos</h1>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div id="avisos"></div>
+    <div class="mapa-marco">
+      <div id="mapa-enfermos" class="mapa-enfermos"></div>
+    </div>
+    <p id="contador" class="censo-contador"></p>
+    <div id="lista-enfermos"></div>
+  </main>
+
+  <button class="fab" data-accion="abrir">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+    <span>Registrar enfermo</span>
+  </button>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <div id="hoja" class="hoja" hidden>
+    <div class="hoja-fondo" data-accion="cerrar"></div>
+    <div class="hoja-panel" role="dialog" aria-modal="true" aria-labelledby="titulo-hoja">
+      <div class="hoja-cab">
+        <h2 id="titulo-hoja">Registrar enfermo</h2>
+        <button type="button" class="btn btn-icono" data-accion="cerrar" aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+        </button>
+      </div>
+      <div class="hoja-cuerpo">
+        <div class="form-seccion">
+          <span class="form-seccion-titulo">Ubicación de la casa</span>
+          <div id="ubic-estado" class="ubic-estado"></div>
+          <div id="ubic-zona" class="ubic-zona" hidden></div>
+          <div id="form-mapa" class="form-mapa"></div>
+          <div class="ubic-botones">
+            <button type="button" class="btn btn-suave" data-accion="gps">Usar mi GPS</button>
+          </div>
+          <p class="ayuda">Párate frente a la puerta. Si el punto no quedó exacto, arrastra el pin o toca el mapa.</p>
+        </div>
+
+        <div class="form-seccion">
+          <div class="form-campo">
+            <label for="f-nombre">Nombre del enfermo *</label>
+            <input id="f-nombre" type="text" autocomplete="off" placeholder="José González" />
+          </div>
+          <div class="form-campo">
+            <label for="f-telefono">Teléfono (opcional)</label>
+            <input id="f-telefono" type="tel" inputmode="tel" placeholder="0414-1234567" />
+          </div>
+          <div class="form-campo">
+            <label for="f-referencia">Dirección o referencia (opcional)</label>
+            <input id="f-referencia" type="text" autocomplete="off" placeholder="Calle 86, casa azul al lado de la bodega" />
+          </div>
+        </div>
+
+        <label class="consentimiento">
+          <input id="f-autoriza" type="checkbox" />
+          <span><strong>La familia autoriza</strong> que la Parroquia San Benito de Palermo guarde estos datos para su acompañamiento pastoral. *</span>
+        </label>
+        <p id="f-error" class="form-error" hidden></p>
+      </div>
+      <div class="hoja-pie">
+        <button type="button" class="btn btn-secundario" data-accion="cerrar">Cancelar</button>
+        <button id="f-guardar" type="button" class="btn btn-principal" data-accion="guardar">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script crossorigin="anonymous" src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="config.js?v=2"></script>
+  <script src="zonas.js?v=4"></script>
+  <script src="enfermos.js?v=1"></script>
+</body>
+</html>
