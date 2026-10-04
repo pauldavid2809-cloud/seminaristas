@@ -1,9 +1,9 @@
 /* ==========================================================================
-   Visita a enfermos · Parroquia "San Benito de Palermo"
-   Página aparte (enfermos.html) para registrar rápido la ubicación de los
-   enfermos. Guarda en el mismo censo: una casa con una persona de categoría
-   "enfermo", con la zona detectada por GPS. Así aparecen también en la app
-   principal y se puede armar el recorrido de visitas.
+   Comunión a enfermos · Parroquia "San Benito de Palermo"
+   Página aparte (enfermos.html) para registrar la ubicación de los enfermos
+   a los que se les lleva la comunión. Es una lista APARTE del censo: se
+   guarda en la tabla "comunion_enfermos" (ver supabase-comunion.sql), con la
+   zona detectada por GPS, para armar el recorrido de visitas.
    ========================================================================== */
 
 "use strict";
@@ -17,8 +17,9 @@ const GEO_ZONAS = typeof ZONAS_GEO !== "undefined" ? ZONAS_GEO : [];
 const GEO_PARROQUIA = typeof PARROQUIA_GEO !== "undefined" ? PARROQUIA_GEO : null;
 const CENTRO = GEO_PARROQUIA ? [GEO_PARROQUIA.lat, GEO_PARROQUIA.lng] : [10.6548, -71.6019];
 
-const LS_COLA = "enfermos_pendientes";
-const LS_COPIA = "enfermos_copia";
+const TABLA = "comunion_enfermos";
+const LS_COLA = "comunion_pendientes";
+const LS_COPIA = "comunion_copia";
 const GPS_PRECISION_BUENA = 20;
 const GPS_ESPERA_MS = 15000;
 
@@ -102,50 +103,50 @@ function toast(texto) {
 
 /* ---------- Datos ---------- */
 
-let sectores = [];
-let enfermos = []; // { casaId, personaId, nombre, telefono, referencia, lat, lng, zona, creado }
+let enfermos = []; // { id, nombre, telefono, referencia, lat, lng, zona, creado }
 let usandoCopia = null;
+let faltaTabla = false; // la tabla aún no se creó en Supabase
+
+function esFaltaTabla(e) {
+  const t = `${e?.code || ""} ${e?.message || ""}`;
+  return /PGRST205|42P01|comunion_enfermos/.test(t) && /exist|find|schema cache/i.test(t);
+}
 
 async function cargar() {
   try {
     if (!sb) throw new Error("Failed to fetch");
-    const [s, c, p] = await Promise.all([
-      sb.from("sectores").select("id,nombre").eq("activo", true),
-      sb.from("casas").select("id,sector_id,direccion,telefono,lat,lng,creado_en,sectores(nombre)").eq("eliminado", false),
-      sb.from("personas").select("id,casa_id,nombre,categorias,creado_en").eq("eliminado", false).overlaps("categorias", ["enfermo", "uncion"]),
-    ]);
-    for (const r of [s, c, p]) if (r.error) throw r.error;
-    sectores = s.data.map((x) => ({ ...x, nombre: x.nombre.trim() }));
-    const casas = Object.fromEntries(c.data.map((x) => [x.id, x]));
-    enfermos = p.data
-      .filter((x) => casas[x.casa_id])
-      .map((x) => {
-        const casa = casas[x.casa_id];
-        return {
-          casaId: casa.id,
-          personaId: x.id,
-          nombre: x.nombre,
-          telefono: casa.telefono,
-          referencia: casa.direccion,
-          lat: casa.lat,
-          lng: casa.lng,
-          zona: (casa.sectores?.nombre || "").trim(),
-          creado: x.creado_en,
-        };
-      })
-      .sort((a, b) => (a.creado < b.creado ? 1 : -1));
+    const { data, error } = await sb
+      .from(TABLA)
+      .select("id,nombre,telefono,referencia,zona,lat,lng,creado_en")
+      .eq("eliminado", false)
+      .order("creado_en", { ascending: false });
+    if (error) throw error;
+    faltaTabla = false;
+    enfermos = data.map((x) => ({
+      id: x.id,
+      nombre: x.nombre,
+      telefono: x.telefono,
+      referencia: x.referencia,
+      lat: x.lat,
+      lng: x.lng,
+      zona: (x.zona || "").trim(),
+      creado: x.creado_en,
+    }));
     usandoCopia = null;
     try {
-      localStorage.setItem(LS_COPIA, JSON.stringify({ fecha: new Date().toISOString(), sectores, enfermos }));
+      localStorage.setItem(LS_COPIA, JSON.stringify({ fecha: new Date().toISOString(), enfermos }));
     } catch {
       /* sin almacenamiento: solo se pierde el modo sin señal */
     }
   } catch (e) {
+    if (esFaltaTabla(e)) {
+      faltaTabla = true;
+      return;
+    }
     if (!errorDeRed(e)) throw e;
     try {
       const copia = JSON.parse(localStorage.getItem(LS_COPIA) || "null");
       if (copia) {
-        sectores = copia.sectores;
         enfermos = copia.enfermos;
         usandoCopia = copia.fecha;
       }
@@ -174,14 +175,8 @@ function guardarCola(lista) {
 }
 
 async function enviar(registro) {
-  let casaId = registro.casa_id;
-  if (!casaId) {
-    const { data, error } = await sb.from("casas").insert(registro.casa).select("id").single();
-    if (error) throw error;
-    casaId = data.id;
-    registro.casa_id = casaId; // si falla la persona, no se duplica la casa al reintentar
-  }
-  const { error } = await sb.from("personas").insert({ ...registro.persona, casa_id: casaId });
+  // El id se genera en el teléfono: si se reintenta, no se duplica
+  const { error } = await sb.from(TABLA).upsert(registro.fila, { onConflict: "id", ignoreDuplicates: true });
   if (error) throw error;
 }
 
@@ -202,7 +197,7 @@ async function sincronizar() {
   guardarCola(lista);
   await cargar();
   pintarTodo();
-  toast("Registros enviados al censo");
+  toast("Registros enviados a la lista");
 }
 
 /* ---------- Mapa ---------- */
@@ -306,6 +301,9 @@ function seguirMiUbicacion() {
 function pintarAvisos() {
   const n = cola().length;
   const avisos = [];
+  if (faltaTabla) {
+    avisos.push(`<div class="aviso-offline"><span><strong>Falta activar la lista.</strong> Hay que crear la tabla en Supabase (archivo supabase-comunion.sql). Mientras tanto no se puede guardar.</span></div>`);
+  }
   if (usandoCopia) {
     avisos.push(`<div class="aviso-offline"><span><strong>Sin señal.</strong> Ves la lista guardada en este teléfono. Lo que registres se envía solo al volver la señal.</span></div>`);
   }
@@ -317,7 +315,7 @@ function pintarAvisos() {
 }
 
 function pintarLista() {
-  const pendientesCola = cola().map((r) => ({ nombre: r.persona.nombre, zona: r.zonaNombre, enCola: true }));
+  const pendientesCola = cola().map((r) => ({ nombre: r.fila.nombre, zona: r.zonaNombre, enCola: true }));
   const todos = [...pendientesCola, ...enfermos];
   $("#contador").textContent = `${todos.length} enfermo${todos.length !== 1 ? "s" : ""} registrado${todos.length !== 1 ? "s" : ""}`;
   if (!todos.length) {
@@ -514,27 +512,23 @@ async function guardar() {
   if (!nombre) return errorForm("Escribe el nombre del enfermo.");
   if (!formUbic) return errorForm("Falta la ubicación: usa el GPS o toca el mapa donde está la casa.");
   if (!$("#f-autoriza").checked) return errorForm("Pide la autorización de la familia y marca la casilla.");
+  if (faltaTabla) return errorForm("La lista todavía no está activada en Supabase (falta crear la tabla).");
   const r = zonaParaPunto(formUbic.lat, formUbic.lng);
-  const sector = r && sectores.find((s) => s.nombre === r.zona.nombre);
-  if (!sector) return errorForm("No se pudo asignar la zona. Abre la página una vez con señal y vuelve a intentarlo.");
 
-  const ahora = new Date().toISOString();
   const referencia = $("#f-referencia").value.trim();
   const registro = {
-    zonaNombre: nombreZona(r.zona),
-    casa: {
-      sector_id: sector.id,
-      direccion: referencia || "(sin dirección: ver ubicación en el mapa)",
-      familia: null,
+    zonaNombre: r ? nombreZona(r.zona) : "",
+    fila: {
+      id: crypto.randomUUID ? crypto.randomUUID() : uuidSimple(),
+      nombre,
       telefono: normalizarTelefono($("#f-telefono").value),
-      notas: "Registrado desde Visita a enfermos",
+      referencia: referencia || null,
+      zona: r ? r.zona.nombre : null,
       lat: formUbic.lat,
       lng: formUbic.lng,
       precision_m: formUbic.precision != null ? Math.round(formUbic.precision) : null,
-      consentimiento: true,
-      consentimiento_en: ahora,
+      consentimiento_en: new Date().toISOString(),
     },
-    persona: { nombre, edad: null, categorias: ["enfermo"], notas: null },
   };
 
   const boton = $("#f-guardar");
@@ -544,7 +538,7 @@ async function guardar() {
     cerrarFormulario();
     await cargar();
     pintarTodo();
-    toast(`${nombre} quedó registrado en el censo`);
+    toast(`${nombre} quedó en la lista de comunión`);
   } catch (e) {
     if (errorDeRed(e)) {
       guardarCola([...cola(), registro]);
@@ -557,6 +551,12 @@ async function guardar() {
   } finally {
     boton.disabled = false;
   }
+}
+
+function uuidSimple() {
+  return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) =>
+    (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)
+  );
 }
 
 /* ---------- Eventos ---------- */
