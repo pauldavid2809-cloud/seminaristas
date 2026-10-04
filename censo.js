@@ -134,6 +134,7 @@ const ICONOS = {
   borrar: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
   personaMas: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M19 8v6M16 11h6"/>',
   ruta: '<path d="M3 11 21 3l-8 18-2-8z"/>',
+  megafono: '<path d="M3 10v4h3l7 5V5L6 10z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/>',
   cerrar: '<path d="M6 6l12 12M18 6 6 18"/>',
   buscar: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
   recargar: '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/>',
@@ -338,6 +339,10 @@ function agregarCapaZonas(mapa, { interactivas = false, resaltar = "" } = {}) {
       poligono.bindPopup(
         `<div class="popup-casa"><strong>${esc(z.nombre)}</strong>${z.santo ? `<p class="popup-santo">${esc(z.santo)}</p>` : ""}<p>${plural(nCasas, "casa censada", "casas censadas")}</p>${
           z.nota ? `<p>${esc(z.nota)}</p>` : ""
+        }${
+          typeof canalDeZona === "function" && canalDeZona(z.nombre)
+            ? `<a class="btn btn-canal-popup" href="${canalDeZona(z.nombre)}" target="_blank" rel="noopener">📢 Canal de la zona</a>`
+            : ""
         }</div>`
       );
     }
@@ -1375,6 +1380,16 @@ function botonEnviarDiptico(c) {
              aria-label="Enviar díptico por WhatsApp">${icono("libro")}</a>`;
 }
 
+/* Invitar a la casa al canal de WhatsApp de su zona */
+function botonCanal(c) {
+  const url = typeof canalDeZona === "function" ? canalDeZona(c.sector) : null;
+  if (!url || !c.telefono) return "";
+  const zona = zonaConSanto(c.sector);
+  return `<a class="btn btn-icono btn-canal" href="${linkWhatsApp(c.telefono, mensajeCanal(zona, url, saludoFamilia(c.familia)))}"
+             target="_blank" rel="noopener" title="Invitar al canal de WhatsApp de la ${esc(zona)}"
+             aria-label="Invitar al canal de la zona por WhatsApp">${icono("megafono")}</a>`;
+}
+
 function cardCasa(c) {
   return `
     <div class="card casa-card">
@@ -1408,6 +1423,7 @@ function cardCasa(c) {
       <div class="casa-acciones">
         ${accionesUbicacion(c)}
         <span class="espaciador"></span>
+        ${botonCanal(c)}
         ${botonEnviarDiptico(c)}
         <button class="btn btn-icono" data-accion="persona-en-casa" data-id="${c.id}" title="Agregar persona" aria-label="Agregar persona">${icono("personaMas")}</button>
         <button class="btn btn-icono" data-accion="editar-casa" data-id="${c.id}" title="Editar casa" aria-label="Editar casa">${icono("editar")}</button>
