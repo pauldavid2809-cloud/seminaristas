@@ -34,3 +34,9 @@ create policy "anon actualiza comunion" on comunion_enfermos for update to anon 
 alter table comunion_enfermos add column foto text;
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types) values ('comunion-fotos', 'comunion-fotos', true, 2097152, array['image/jpeg']);
 create policy "anon sube fotos comunion" on storage.objects for insert to anon with check (bucket_id = 'comunion-fotos');
+
+-- ============================================================================
+-- Varias personas en la misma casa (correr una sola vez)
+-- "casa" = id del primero que se registró en esa casa (null = es el primero)
+-- ============================================================================
+alter table comunion_enfermos add column casa uuid;
