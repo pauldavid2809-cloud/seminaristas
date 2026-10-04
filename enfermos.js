@@ -18,6 +18,8 @@ const GEO_PARROQUIA = typeof PARROQUIA_GEO !== "undefined" ? PARROQUIA_GEO : nul
 const CENTRO = GEO_PARROQUIA ? [GEO_PARROQUIA.lat, GEO_PARROQUIA.lng] : [10.6548, -71.6019];
 
 const TABLA = "comunion_enfermos";
+const BUCKET = "comunion-fotos";
+const FOTO_LADO = 1280; // px del lado mayor: buena vista y poco peso (~150 KB)
 const LS_COLA = "comunion_pendientes";
 const LS_COPIA = "comunion_copia";
 const GPS_PRECISION_BUENA = 20;
@@ -103,7 +105,7 @@ function toast(texto) {
 
 /* ---------- Datos ---------- */
 
-let enfermos = []; // { id, nombre, telefono, referencia, lat, lng, zona, creado }
+let enfermos = []; // { id, nombre, telefono, referencia, lat, lng, zona, foto, creado }
 let usandoCopia = null;
 let faltaTabla = false; // la tabla aún no se creó en Supabase
 
@@ -117,7 +119,7 @@ async function cargar() {
     if (!sb) throw new Error("Failed to fetch");
     const { data, error } = await sb
       .from(TABLA)
-      .select("id,nombre,telefono,referencia,zona,lat,lng,creado_en")
+      .select("*")
       .eq("eliminado", false)
       .order("creado_en", { ascending: false });
     if (error) throw error;
@@ -130,6 +132,7 @@ async function cargar() {
       lat: x.lat,
       lng: x.lng,
       zona: (x.zona || "").trim(),
+      foto: x.foto || null,
       creado: x.creado_en,
     }));
     usandoCopia = null;
@@ -158,9 +161,18 @@ async function cargar() {
 
 /* ---------- Cola sin señal ---------- */
 
+let colaTexto = null;
+let colaLeida = [];
+
 function cola() {
   try {
-    return JSON.parse(localStorage.getItem(LS_COLA) || "[]");
+    const texto = localStorage.getItem(LS_COLA) || "[]";
+    // Se relee solo si cambió: con fotos la cola puede pesar
+    if (texto !== colaTexto) {
+      colaLeida = JSON.parse(texto);
+      colaTexto = texto;
+    }
+    return colaLeida;
   } catch {
     return [];
   }
@@ -169,12 +181,62 @@ function cola() {
 function guardarCola(lista) {
   try {
     localStorage.setItem(LS_COLA, JSON.stringify(lista));
+    return true;
   } catch {
-    /* sin almacenamiento */
+    return false; // sin almacenamiento o lleno (las fotos pesan)
   }
 }
 
+/* ---------- Fotos ---------- */
+
+function urlFoto(ruta) {
+  return ruta ? `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${ruta.split("/").map(encodeURIComponent).join("/")}` : null;
+}
+
+/* Foto de un enfermo: la que espera señal en este teléfono o la ya subida */
+function fotoDe(e) {
+  const enCola = cola().filter((r) => r.tipo === "foto" && r.id === e.id).pop();
+  return enCola?.foto || urlFoto(e.foto);
+}
+
+function errorDeFotos(e) {
+  return /foto|bucket/i.test(`${e?.message || ""} ${e?.error || ""}`);
+}
+
+async function comprimirFoto(archivo) {
+  const url = URL.createObjectURL(archivo);
+  try {
+    const img = await new Promise((ok, mal) => {
+      const i = new Image();
+      i.onload = () => ok(i);
+      i.onerror = () => mal(new Error("No se pudo leer la foto"));
+      i.src = url;
+    });
+    const escala = Math.min(1, FOTO_LADO / Math.max(img.naturalWidth, img.naturalHeight));
+    const lienzo = document.createElement("canvas");
+    lienzo.width = Math.round(img.naturalWidth * escala);
+    lienzo.height = Math.round(img.naturalHeight * escala);
+    lienzo.getContext("2d").drawImage(img, 0, 0, lienzo.width, lienzo.height);
+    return lienzo.toDataURL("image/jpeg", 0.72);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+async function subirFoto(ruta, dataUrl) {
+  const blob = await (await fetch(dataUrl)).blob();
+  const { error } = await sb.storage.from(BUCKET).upload(ruta, blob, { contentType: "image/jpeg", upsert: false });
+  // Si ya se había subido en un intento anterior, está bien
+  if (error && !/exist|duplicate/i.test(`${error.message || ""} ${error.error || ""}`)) throw error;
+}
+
 async function enviar(registro) {
+  if (registro.foto) await subirFoto(registro.fotoRuta, registro.foto);
+  if (registro.tipo === "foto") {
+    const { error } = await sb.from(TABLA).update({ foto: registro.fotoRuta }).eq("id", registro.id);
+    if (error) throw error;
+    return;
+  }
   // El id se genera en el teléfono: si se reintenta, no se duplica
   const { error } = await sb.from(TABLA).upsert(registro.fila, { onConflict: "id", ignoreDuplicates: true });
   if (error) throw error;
@@ -268,7 +330,7 @@ function pintarMapa() {
       const clase = !r ? "" : n == null ? "fuera-ruta" : r.visitados.includes(e.id) ? "visitado" : "";
       L.marker([e.lat, e.lng], { icon: iconoEnfermo(n == null ? "" : clase === "visitado" ? "✓" : n, clase), pane: "enfermos" })
         .bindPopup(
-          `<div class="popup-casa"><strong>${n != null && r ? `${n}. ` : ""}${esc(e.nombre)}</strong><p>${esc(e.zona)}${
+          `<div class="popup-casa">${fotoDe(e) ? `<img class="popup-foto" src="${esc(fotoDe(e))}" alt="Foto del lugar" data-accion="ver-foto" data-src="${esc(fotoDe(e))}" />` : ""}<strong>${n != null && r ? `${n}. ` : ""}${esc(e.nombre)}</strong><p>${esc(e.zona)}${
             e.referencia ? ` · ${esc(e.referencia)}` : ""
           }</p><a class="btn btn-principal" href="${linkComoLlegar(e.lat, e.lng)}" target="_blank" rel="noopener">Cómo llegar</a></div>`
         )
@@ -314,14 +376,14 @@ function pintarAvisos() {
     avisos.push(`<div class="aviso-offline"><span><strong>Sin señal.</strong> Ves la lista guardada en este teléfono. Lo que registres se envía solo al volver la señal.</span></div>`);
   }
   if (n) {
-    avisos.push(`<div class="aviso-offline"><span>Hay <strong>${n}</strong> enfermo${n > 1 ? "s" : ""} guardado${n > 1 ? "s" : ""} en este teléfono esperando señal.</span>
+    avisos.push(`<div class="aviso-offline"><span>Hay <strong>${n}</strong> registro${n > 1 ? "s" : ""} guardado${n > 1 ? "s" : ""} en este teléfono esperando señal.</span>
       <button class="btn btn-secundario btn-chip" data-accion="sincronizar">Enviar ahora</button></div>`);
   }
   $("#avisos").innerHTML = avisos.join("");
 }
 
 function pintarLista() {
-  const pendientesCola = cola().map((r) => ({ nombre: r.fila.nombre, zona: r.zonaNombre, enCola: true }));
+  const pendientesCola = cola().filter((r) => r.fila).map((r) => ({ nombre: r.fila.nombre, zona: r.zonaNombre, enCola: true }));
   const todos = [...pendientesCola, ...enfermos];
   $("#contador").textContent = `${todos.length} enfermo${todos.length !== 1 ? "s" : ""} registrado${todos.length !== 1 ? "s" : ""}`;
   if (!todos.length) {
@@ -337,11 +399,16 @@ function pintarLista() {
       const conPunto = e.lat != null;
       const n = conPunto ? numeroDe(e) ?? "·" : "–";
       return `<div class="card enfermo-fila">
-        <span class="enfermo-num${n === "·" ? " fuera-ruta" : ""}">${n}</span>
+        ${
+          fotoDe(e)
+            ? `<button type="button" class="enfermo-foto" data-accion="ver-foto" data-src="${esc(fotoDe(e))}" aria-label="Ver foto del lugar"><img src="${esc(fotoDe(e))}" alt="" loading="lazy" /><span class="enfermo-num${n === "·" ? " fuera-ruta" : ""}">${n}</span></button>`
+            : `<span class="enfermo-num${n === "·" ? " fuera-ruta" : ""}">${n}</span>`
+        }
         <div class="enfermo-datos">
           <strong>${esc(e.nombre)}</strong>
           <span class="texto-suave">${esc(e.zona)}${e.referencia ? ` · ${esc(e.referencia)}` : ""}</span>
           ${e.telefono ? `<a class="enfermo-tel" href="tel:${esc(e.telefono)}">📞 ${esc(formatoLocal(e.telefono))}</a>` : ""}
+          ${fotoDe(e) ? "" : `<button type="button" class="enfermo-agregar-foto" data-accion="agregar-foto" data-id="${esc(e.id)}">📷 Agregar foto</button>`}
         </div>
         ${conPunto ? `<a class="btn btn-principal btn-chip enfermo-llegar" href="${linkComoLlegar(e.lat, e.lng)}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 21 3l-8 18-2-8z" /></svg>Cómo llegar</a>` : `<span class="texto-suave">sin ubicación</span>`}
       </div>`;
@@ -524,6 +591,7 @@ function pintarRuta() {
           </div>
           <button type="button" class="btn btn-chip ${hecha ? "btn-suave" : "btn-secundario"}" data-accion="visitado" data-id="${esc(e.id)}" aria-pressed="${hecha}">${hecha ? "Visitado" : "Listo"}</button>
           <a class="btn btn-principal btn-icono-chip" href="${linkComoLlegar(e.lat, e.lng)}" target="_blank" rel="noopener" aria-label="Cómo llegar a ${esc(e.nombre)}" title="Cómo llegar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 21 3l-8 18-2-8z" /></svg></a>
+          ${e === siguiente && fotoDe(e) ? `<img class="ruta-foto" src="${esc(fotoDe(e))}" alt="Foto del lugar" data-accion="ver-foto" data-src="${esc(fotoDe(e))}" />` : ""}
         </li>`;
         })
         .join("")}
@@ -723,6 +791,7 @@ function abrirFormulario() {
   $("#f-telefono").value = "";
   $("#f-referencia").value = "";
   $("#f-autoriza").checked = false;
+  ponerFotoForm(null);
   $("#f-error").hidden = true;
   estadoUbic("", "Sin ubicación todavía");
   setTimeout(() => {
@@ -784,6 +853,11 @@ async function guardar() {
       consentimiento_en: new Date().toISOString(),
     },
   };
+  if (formFoto) {
+    registro.foto = formFoto;
+    registro.fotoRuta = `${registro.fila.id}/${Date.now()}.jpg`;
+    registro.fila.foto = registro.fotoRuta;
+  }
 
   const boton = $("#f-guardar");
   boton.disabled = true;
@@ -795,16 +869,82 @@ async function guardar() {
     toast(`${nombre} quedó en la lista de comunión`);
   } catch (e) {
     if (errorDeRed(e)) {
-      guardarCola([...cola(), registro]);
+      let aviso = "Sin señal: quedó guardado y se enviará al volver la señal";
+      if (!guardarCola([...cola(), registro])) {
+        // Sin espacio para la foto: se guarda el registro sin ella
+        delete registro.foto;
+        delete registro.fila.foto;
+        guardarCola([...cola(), registro]);
+        aviso = "Sin señal y sin espacio para la foto: se guardó sin foto";
+      }
       cerrarFormulario();
       pintarTodo();
-      toast("Sin señal: quedó guardado y se enviará al volver la señal");
+      toast(aviso);
+    } else if (registro.foto && errorDeFotos(e)) {
+      errorForm("Las fotos todavía no están activadas en Supabase. Quita la foto para guardar, o activa las fotos primero.");
     } else {
       errorForm(`No se pudo guardar: ${e.message}`);
     }
   } finally {
     boton.disabled = false;
   }
+}
+
+let formFoto = null; // foto del formulario (JPEG comprimido, data URL)
+let fotoPara = null; // "form" o el id del enfermo al que se le agrega foto
+
+function ponerFotoForm(dataUrl) {
+  formFoto = dataUrl;
+  const vista = $("#f-foto-vista");
+  vista.hidden = !dataUrl;
+  vista.querySelector("img").src = dataUrl || "";
+  $("#f-foto-btn").textContent = dataUrl ? "📷 Cambiar foto" : "📷 Tomar o elegir foto";
+}
+
+function elegirFoto(destino) {
+  fotoPara = destino;
+  const input = $("#input-foto");
+  input.value = "";
+  input.click();
+}
+
+async function alElegirFoto(archivo) {
+  if (!archivo) return;
+  let dataUrl;
+  try {
+    dataUrl = await comprimirFoto(archivo);
+  } catch (e) {
+    toast(e.message);
+    return;
+  }
+  if (fotoPara === "form") ponerFotoForm(dataUrl);
+  else if (fotoPara) agregarFoto(fotoPara, dataUrl);
+}
+
+async function agregarFoto(id, dataUrl) {
+  const registro = { tipo: "foto", id, foto: dataUrl, fotoRuta: `${id}/${Date.now()}.jpg` };
+  toast("Subiendo foto…");
+  try {
+    await enviar(registro);
+    await cargar();
+    pintarTodo();
+    toast("Foto guardada");
+  } catch (e) {
+    if (errorDeRed(e)) {
+      if (guardarCola([...cola(), registro])) {
+        pintarTodo();
+        toast("Sin señal: la foto se enviará al volver la señal");
+      } else toast("Sin señal y sin espacio en el teléfono para la foto");
+    } else if (errorDeFotos(e)) {
+      toast("Las fotos todavía no están activadas en Supabase");
+    } else toast(`No se pudo guardar la foto: ${e.message}`);
+  }
+}
+
+function verFoto(src) {
+  const visor = $("#visor");
+  visor.querySelector("img").src = src;
+  visor.hidden = false;
 }
 
 function uuidSimple() {
@@ -824,6 +964,11 @@ document.addEventListener("click", (ev) => {
   else if (a === "guardar") guardar();
   else if (a === "gps") capturarGPS();
   else if (a === "sincronizar") sincronizar();
+  else if (a === "elegir-foto") elegirFoto("form");
+  else if (a === "quitar-foto") ponerFotoForm(null);
+  else if (a === "agregar-foto") elegirFoto(el.dataset.id);
+  else if (a === "ver-foto") verFoto(el.dataset.src);
+  else if (a === "cerrar-visor") $("#visor").hidden = true;
   else if (a === "abrir-ruta") abrirRuta();
   else if (a === "cerrar-ruta") cerrarRuta();
   else if (a === "armar-ruta") armarRuta();
@@ -835,11 +980,13 @@ document.addEventListener("click", (ev) => {
 
 document.addEventListener("keydown", (ev) => {
   if (ev.key !== "Escape") return;
-  if (!$("#hoja").hidden) cerrarFormulario();
+  if (!$("#visor").hidden) $("#visor").hidden = true;
+  else if (!$("#hoja").hidden) cerrarFormulario();
   else if (!$("#hoja-ruta").hidden) cerrarRuta();
 });
 
 window.addEventListener("online", sincronizar);
+$("#input-foto").addEventListener("change", (ev) => alElegirFoto(ev.target.files[0]));
 
 (async function iniciar() {
   iniciarMapa();
