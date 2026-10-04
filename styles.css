@@ -2587,3 +2587,60 @@ body.pagina-enfermos {
 .obs-casa {
   margin: 0 0 10px;
 }
+
+/* Invitación al canal de WhatsApp de la zona */
+.btn-canal {
+  background: #e0f2fe;
+  border-color: #bae6fd;
+  color: #0369a1;
+}
+
+.btn-canal-popup {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #25d366;
+  color: #fff !important;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+
+/* Con el botón del canal, las acciones de la casa deben seguir en una fila */
+@media (max-width: 420px) {
+  .casa-acciones {
+    gap: 4px;
+  }
+
+  .casa-acciones .btn-icono,
+  .casa-acciones .btn-chip {
+    height: 32px;
+  }
+
+  .casa-acciones .btn-icono {
+    width: 32px;
+  }
+
+  .casa-acciones .btn-chip .txt-largo {
+    display: none;
+  }
+
+  .casa-acciones .btn-chip .txt-corto {
+    display: inline;
+  }
+}
+
+@media (max-width: 374px) {
+  .casa-acciones .btn-chip .txt-corto,
+  .casa-acciones .btn-chip .txt-largo {
+    display: none;
+  }
+
+  .casa-acciones .btn-chip {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    justify-content: center;
+  }
+}

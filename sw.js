@@ -11,7 +11,7 @@
    Al cambiar algo importante de este archivo, subir VERSION.
    ========================================================================== */
 
-const VERSION = "2026-10-03-1";
+const VERSION = "2026-10-04-1";
 const CACHE_APP = `censo-app-${VERSION}`;
 const CACHE_MAPAS = "censo-mapas-v1";
 const MAX_MOSAICOS = 3000;
