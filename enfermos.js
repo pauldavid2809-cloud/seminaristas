@@ -235,8 +235,8 @@ function capaZonas(m) {
   }
 }
 
-function iconoEnfermo(n) {
-  return L.divIcon({ className: "pin-enfermo", html: `<span>${n}</span>`, iconSize: [30, 30], iconAnchor: [15, 15] });
+function iconoEnfermo(n, clase = "") {
+  return L.divIcon({ className: `pin-enfermo ${clase}`, html: `<span>${n}</span>`, iconSize: [30, 30], iconAnchor: [15, 15] });
 }
 
 function iniciarMapa() {
@@ -257,13 +257,19 @@ function iniciarMapa() {
 function pintarMapa() {
   if (!mapa) return;
   capaEnfermos.clearLayers();
+  const r = rutaActual();
+  if (r) {
+    L.polyline(puntosRuta(r), { color: "#1d3a5f", weight: 3, opacity: 0.75, dashArray: "6 8", interactive: false }).addTo(capaEnfermos);
+  }
   enfermos
     .filter((e) => e.lat != null)
-    .forEach((e, i) => {
-      L.marker([e.lat, e.lng], { icon: iconoEnfermo(i + 1), pane: "enfermos" })
+    .forEach((e) => {
+      const n = numeroDe(e);
+      const clase = !r ? "" : n == null ? "fuera-ruta" : r.visitados.includes(e.id) ? "visitado" : "";
+      L.marker([e.lat, e.lng], { icon: iconoEnfermo(n == null ? "" : clase === "visitado" ? "✓" : n, clase), pane: "enfermos" })
         .bindPopup(
-          `<div class="popup-casa"><strong>${esc(e.nombre)}</strong><p>${esc(e.zona)}${
-            e.referencia && !e.referencia.startsWith("(") ? ` · ${esc(e.referencia)}` : ""
+          `<div class="popup-casa"><strong>${n != null && r ? `${n}. ` : ""}${esc(e.nombre)}</strong><p>${esc(e.zona)}${
+            e.referencia ? ` · ${esc(e.referencia)}` : ""
           }</p><a class="btn btn-principal" href="${linkComoLlegar(e.lat, e.lng)}" target="_blank" rel="noopener">Cómo llegar</a></div>`
         )
         .addTo(capaEnfermos);
@@ -322,19 +328,19 @@ function pintarLista() {
     $("#lista-enfermos").innerHTML = `<div class="card vacio-card"><span class="vacio-icono">🙏</span>Todavía no hay enfermos registrados.<span class="texto-suave">Toca <strong>Registrar enfermo</strong> frente a su casa.</span></div>`;
     return;
   }
-  let numero = 0;
-  $("#lista-enfermos").innerHTML = todos
+  const titulo = rutaActual() ? `<p class="censo-contador lista-titulo">Todos los enfermos</p>` : "";
+  $("#lista-enfermos").innerHTML = titulo + todos
     .map((e) => {
       if (e.enCola) {
         return `<div class="card enfermo-fila"><span class="enfermo-num cola">⏳</span><div class="enfermo-datos"><strong>${esc(e.nombre)}</strong><span class="texto-suave">${esc(e.zona || "")} · esperando señal</span></div></div>`;
       }
       const conPunto = e.lat != null;
-      const n = conPunto ? ++numero : "–";
+      const n = conPunto ? numeroDe(e) ?? "·" : "–";
       return `<div class="card enfermo-fila">
-        <span class="enfermo-num">${n}</span>
+        <span class="enfermo-num${n === "·" ? " fuera-ruta" : ""}">${n}</span>
         <div class="enfermo-datos">
           <strong>${esc(e.nombre)}</strong>
-          <span class="texto-suave">${esc(e.zona)}${e.referencia && !e.referencia.startsWith("(") ? ` · ${esc(e.referencia)}` : ""}</span>
+          <span class="texto-suave">${esc(e.zona)}${e.referencia ? ` · ${esc(e.referencia)}` : ""}</span>
           ${e.telefono ? `<a class="enfermo-tel" href="tel:${esc(e.telefono)}">📞 ${esc(formatoLocal(e.telefono))}</a>` : ""}
         </div>
         ${conPunto ? `<a class="btn btn-principal btn-chip enfermo-llegar" href="${linkComoLlegar(e.lat, e.lng)}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 21 3l-8 18-2-8z" /></svg>Cómo llegar</a>` : `<span class="texto-suave">sin ubicación</span>`}
@@ -346,7 +352,255 @@ function pintarLista() {
 function pintarTodo() {
   pintarAvisos();
   pintarLista();
+  pintarRuta();
   pintarMapa();
+}
+
+/* ---------- Recorrido ---------- */
+
+const LS_RUTA = "comunion_ruta";
+const FACTOR_CALLES = 1.3; // por las calles se camina más que en línea recta
+const METROS_POR_MINUTO = 75; // ~4,5 km/h
+const MAX_INTERMEDIAS = 9; // Google Maps acepta pocas paradas intermedias por enlace
+
+// { inicio: { tipo: "parroquia"|"yo", lat, lng }, volver, paradas: [id], visitados: [id], creada }
+let ruta = (() => {
+  try {
+    return JSON.parse(localStorage.getItem(LS_RUTA) || "null");
+  } catch {
+    return null;
+  }
+})();
+
+function guardarRuta() {
+  try {
+    if (ruta) localStorage.setItem(LS_RUTA, JSON.stringify(ruta));
+    else localStorage.removeItem(LS_RUTA);
+  } catch {
+    /* sin almacenamiento: el recorrido dura mientras la página esté abierta */
+  }
+}
+
+/* El recorrido guardado con los enfermos que siguen en la lista */
+function rutaActual() {
+  if (!ruta) return null;
+  const porId = Object.fromEntries(enfermos.filter((e) => e.lat != null).map((e) => [e.id, e]));
+  const paradas = ruta.paradas.map((id) => porId[id]).filter(Boolean);
+  if (!paradas.length) return null;
+  return { ...ruta, paradas, visitados: ruta.visitados || [] };
+}
+
+function numeroDe(e) {
+  const r = rutaActual();
+  if (!r) return enfermos.filter((x) => x.lat != null).indexOf(e) + 1 || null;
+  const i = r.paradas.indexOf(e);
+  return i === -1 ? null : i + 1;
+}
+
+function puntosRuta(r) {
+  return [[r.inicio.lat, r.inicio.lng], ...r.paradas.map((e) => [e.lat, e.lng]), ...(r.volver ? [CENTRO] : [])];
+}
+
+function largo(puntos) {
+  let d = 0;
+  for (let i = 1; i < puntos.length; i++) d += distanciaMetros(puntos[i - 1], puntos[i]);
+  return d;
+}
+
+/* Orden de visita: el más cercano primero y luego se destraban cruces (2-opt) */
+function ordenarParadas(inicio, paradas, fin) {
+  const costo = (orden) => largo([inicio, ...orden.map((e) => [e.lat, e.lng]), ...(fin ? [fin] : [])]);
+  const pendientes = [...paradas];
+  let orden = [];
+  let actual = inicio;
+  while (pendientes.length) {
+    let k = 0;
+    pendientes.forEach((e, i) => {
+      if (distanciaMetros(actual, [e.lat, e.lng]) < distanciaMetros(actual, [pendientes[k].lat, pendientes[k].lng])) k = i;
+    });
+    const [e] = pendientes.splice(k, 1);
+    orden.push(e);
+    actual = [e.lat, e.lng];
+  }
+  let mejor = costo(orden);
+  let mejoro = true;
+  while (mejoro) {
+    mejoro = false;
+    for (let i = 0; i < orden.length - 1; i++) {
+      for (let j = i + 1; j < orden.length; j++) {
+        const nuevo = [...orden.slice(0, i), ...orden.slice(i, j + 1).reverse(), ...orden.slice(j + 1)];
+        const c = costo(nuevo);
+        if (c < mejor - 0.5) {
+          orden = nuevo;
+          mejor = c;
+          mejoro = true;
+        }
+      }
+    }
+  }
+  return orden;
+}
+
+/* Enlaces de Google Maps a pie, partidos en tramos si hay muchas paradas */
+function tramosGoogle(r) {
+  const pt = (p) => `${p[0]},${p[1]}`;
+  const destinos = r.paradas.map((e) => [e.lat, e.lng]);
+  if (r.volver) destinos.push(CENTRO);
+  const n = r.paradas.length;
+  const tramos = [];
+  // "Donde estoy": sin origen, Google Maps sale de la ubicación actual del teléfono
+  let origen = r.inicio.tipo === "yo" ? null : [r.inicio.lat, r.inicio.lng];
+  let i = 0;
+  while (i < destinos.length) {
+    const trozo = destinos.slice(i, i + MAX_INTERMEDIAS + 1);
+    const destino = trozo.pop();
+    let url = `https://www.google.com/maps/dir/?api=1&travelmode=walking&destination=${pt(destino)}`;
+    if (origen) url += `&origin=${pt(origen)}`;
+    if (trozo.length) url += `&waypoints=${trozo.map(pt).join("%7C")}`;
+    const desde = i + 1;
+    const hasta = i + trozo.length + 1;
+    tramos.push({ url, desde: Math.min(desde, n), hasta: Math.min(hasta, n), regreso: hasta > n, soloRegreso: desde > n });
+    origen = destino;
+    i = hasta;
+  }
+  return tramos;
+}
+
+function textoDistancia(m) {
+  return m < 1000 ? `${Math.round(m / 10) * 10}\u00a0m` : `${(m / 1000).toFixed(1).replace(".", ",")}\u00a0km`;
+}
+
+function textoMinutos(min) {
+  min = Math.max(1, Math.round(min));
+  return min < 60 ? `${min}\u00a0min` : `${Math.floor(min / 60)}\u00a0h${min % 60 ? ` ${min % 60}\u00a0min` : ""}`;
+}
+
+function etiquetaTramo(t, total) {
+  if (total === 1) return "Abrir recorrido en Google Maps";
+  if (t.soloRegreso) return "Regreso a la parroquia";
+  const visitas = t.desde === t.hasta ? `visita ${t.desde}` : `visitas ${t.desde} a ${t.hasta}`;
+  return `Tramo: ${visitas}${t.regreso ? " y regreso" : ""}`;
+}
+
+function pintarRuta() {
+  const conPunto = enfermos.filter((e) => e.lat != null);
+  $("#btn-ruta").hidden = !conPunto.length;
+  const r = rutaActual();
+  const caja = $("#ruta");
+  if (!r) {
+    caja.innerHTML = "";
+    return;
+  }
+  const metros = largo(puntosRuta(r)) * FACTOR_CALLES;
+  const tramos = tramosGoogle(r);
+  const hechas = r.paradas.filter((e) => r.visitados.includes(e.id)).length;
+  const siguiente = r.paradas.find((e) => !r.visitados.includes(e.id));
+  caja.innerHTML = `<section class="card ruta-card">
+    <div class="ruta-cab">
+      <div>
+        <strong>Recorrido de visitas</strong>
+        <span class="texto-suave">${r.paradas.length} visita${r.paradas.length !== 1 ? "s" : ""} · ${textoDistancia(metros)} · ~${textoMinutos(metros / METROS_POR_MINUTO)} a pie${
+          hechas ? ` · ${hechas} hecha${hechas !== 1 ? "s" : ""}` : ""
+        }</span>
+      </div>
+      <button type="button" class="btn btn-secundario btn-chip" data-accion="quitar-ruta">Quitar</button>
+    </div>
+    <div class="ruta-tramos">
+      ${tramos
+        .map((t) => `<a class="btn btn-principal" href="${t.url}" target="_blank" rel="noopener">${etiquetaTramo(t, tramos.length)}</a>`)
+        .join("")}
+    </div>
+    ${tramos.length > 1 ? `<p class="ayuda">Google Maps solo acepta unas 10 paradas por enlace: al terminar un tramo, abre el siguiente.</p>` : ""}
+    <ol class="ruta-paradas">
+      <li class="ruta-punta">${r.inicio.tipo === "yo" ? "📍 Salida: donde estabas" : "⛪ Salida: la parroquia"}</li>
+      ${r.paradas
+        .map((e, i) => {
+          const hecha = r.visitados.includes(e.id);
+          return `<li class="ruta-parada${hecha ? " hecha" : ""}${e === siguiente ? " siguiente" : ""}">
+          <span class="enfermo-num${hecha ? " visitado" : ""}">${hecha ? "✓" : i + 1}</span>
+          <div class="enfermo-datos">
+            <strong>${esc(e.nombre)}</strong>
+            <span class="texto-suave">${e === siguiente ? "Siguiente · " : ""}${esc(e.zona)}${e.referencia ? ` · ${esc(e.referencia)}` : ""}</span>
+          </div>
+          <button type="button" class="btn btn-chip ${hecha ? "btn-suave" : "btn-secundario"}" data-accion="visitado" data-id="${esc(e.id)}" aria-pressed="${hecha}">${hecha ? "Visitado" : "Listo"}</button>
+          <a class="btn btn-principal btn-icono-chip" href="${linkComoLlegar(e.lat, e.lng)}" target="_blank" rel="noopener" aria-label="Cómo llegar a ${esc(e.nombre)}" title="Cómo llegar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 21 3l-8 18-2-8z" /></svg></a>
+        </li>`;
+        })
+        .join("")}
+      ${r.volver ? `<li class="ruta-punta">⛪ Regreso a la parroquia</li>` : ""}
+    </ol>
+    <p class="ayuda">Distancia y tiempo aproximados; Google Maps te da el camino exacto por las calles.</p>
+  </section>`;
+}
+
+function abrirRuta() {
+  const conPunto = enfermos.filter((e) => e.lat != null);
+  const elegidos = ruta ? new Set(ruta.paradas) : null;
+  $("#r-lista").innerHTML = conPunto
+    .map(
+      (e) => `<label class="ruta-sel"><input type="checkbox" value="${esc(e.id)}" ${!elegidos || elegidos.has(e.id) ? "checked" : ""} />
+        <span><strong>${esc(e.nombre)}</strong><small class="texto-suave">${esc(e.zona)}</small></span></label>`
+    )
+    .join("");
+  const yo = $("#r-inicio-yo");
+  yo.disabled = !miPos;
+  $("#r-yo-nota").textContent = miPos ? "" : "(activa el GPS para usarlo)";
+  document.querySelector(`input[name="r-inicio"][value="${ruta?.inicio?.tipo === "yo" && miPos ? "yo" : "parroquia"}"]`).checked = true;
+  $("#r-volver").checked = !!ruta?.volver;
+  $("#r-error").hidden = true;
+  $("#hoja-ruta").hidden = false;
+  document.body.classList.add("hoja-abierta");
+}
+
+function cerrarRuta() {
+  $("#hoja-ruta").hidden = true;
+  document.body.classList.remove("hoja-abierta");
+}
+
+function armarRuta() {
+  const ids = [...document.querySelectorAll("#r-lista input:checked")].map((x) => x.value);
+  const paradas = enfermos.filter((e) => e.lat != null && ids.includes(e.id));
+  if (!paradas.length) {
+    const el = $("#r-error");
+    el.textContent = "Marca al menos un enfermo para el recorrido.";
+    el.hidden = false;
+    return;
+  }
+  const tipo = document.querySelector('input[name="r-inicio"]:checked').value === "yo" && miPos ? "yo" : "parroquia";
+  const inicio = tipo === "yo" ? miPos : CENTRO;
+  const volver = $("#r-volver").checked;
+  const orden = ordenarParadas(inicio, paradas, volver ? CENTRO : null);
+  ruta = {
+    inicio: { tipo, lat: inicio[0], lng: inicio[1] },
+    volver,
+    paradas: orden.map((e) => e.id),
+    visitados: [],
+    creada: new Date().toISOString(),
+  };
+  guardarRuta();
+  cerrarRuta();
+  pintarTodo();
+  if (mapa) mapa.fitBounds(L.latLngBounds(puntosRuta(rutaActual())), { padding: [30, 30], maxZoom: 17 });
+  $("#ruta").scrollIntoView({ behavior: "smooth", block: "start" });
+  toast(`Recorrido listo: ${orden.length} visita${orden.length !== 1 ? "s" : ""}`);
+}
+
+function marcarVisitado(id) {
+  if (!ruta) return;
+  const v = new Set(ruta.visitados || []);
+  if (v.has(id)) v.delete(id);
+  else v.add(id);
+  ruta.visitados = [...v];
+  guardarRuta();
+  pintarRuta();
+  pintarMapa();
+}
+
+function quitarRuta() {
+  if (!confirm("¿Quitar el recorrido?")) return;
+  ruta = null;
+  guardarRuta();
+  pintarTodo();
 }
 
 /* ---------- Formulario ---------- */
@@ -570,10 +824,19 @@ document.addEventListener("click", (ev) => {
   else if (a === "guardar") guardar();
   else if (a === "gps") capturarGPS();
   else if (a === "sincronizar") sincronizar();
+  else if (a === "abrir-ruta") abrirRuta();
+  else if (a === "cerrar-ruta") cerrarRuta();
+  else if (a === "armar-ruta") armarRuta();
+  else if (a === "quitar-ruta") quitarRuta();
+  else if (a === "visitado") marcarVisitado(el.dataset.id);
+  else if (a === "ruta-todos" || a === "ruta-ninguno")
+    document.querySelectorAll("#r-lista input").forEach((x) => (x.checked = a === "ruta-todos"));
 });
 
 document.addEventListener("keydown", (ev) => {
-  if (ev.key === "Escape" && !$("#hoja").hidden) cerrarFormulario();
+  if (ev.key !== "Escape") return;
+  if (!$("#hoja").hidden) cerrarFormulario();
+  else if (!$("#hoja-ruta").hidden) cerrarRuta();
 });
 
 window.addEventListener("online", sincronizar);

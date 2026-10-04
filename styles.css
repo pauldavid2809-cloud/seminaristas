@@ -2187,3 +2187,205 @@ body.pagina-enfermos {
   width: 15px;
   height: 15px;
 }
+
+/* Recorrido de visitas (Comunión a enfermos) */
+.enfermos-barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.enfermos-barra .censo-contador {
+  margin: 0;
+}
+
+.enfermos-barra .btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.enfermos-barra .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.ruta-card {
+  padding: 14px;
+  margin-bottom: 14px;
+  border: 1.5px solid var(--primario-suave);
+}
+
+.ruta-cab {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.ruta-cab > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ruta-cab strong {
+  color: var(--primario-oscuro);
+  font-size: 1.02rem;
+}
+
+.ruta-cab .texto-suave {
+  font-size: 0.84rem;
+}
+
+.ruta-tramos {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ruta-tramos .btn {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+}
+
+.ruta-paradas {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ruta-punta {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--tinta-suave);
+  padding: 4px 2px;
+}
+
+.ruta-parada {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: var(--radio-sm);
+  background: var(--fondo);
+}
+
+.ruta-parada.siguiente {
+  background: var(--primario-suave);
+  box-shadow: inset 3px 0 0 var(--primario);
+}
+
+.ruta-parada.hecha .enfermo-datos strong {
+  color: var(--tinta-suave);
+  text-decoration: line-through;
+}
+
+.ruta-parada .enfermo-datos .texto-suave {
+  font-size: 0.8rem;
+}
+
+.ruta-parada .btn-chip {
+  flex-shrink: 0;
+}
+
+.btn-icono-chip {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+
+.btn-icono-chip svg {
+  width: 16px;
+  height: 16px;
+}
+
+.enfermo-num.visitado,
+.pin-enfermo.visitado span {
+  background: var(--verde);
+}
+
+.enfermo-num.fuera-ruta,
+.pin-enfermo.fuera-ruta span {
+  background: var(--tinta-tenue);
+}
+
+.pin-enfermo.fuera-ruta span {
+  width: 16px;
+  height: 16px;
+  margin: 7px;
+}
+
+.ruta-opcion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 2px;
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+
+.ruta-opcion input,
+.ruta-sel input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--primario);
+  flex-shrink: 0;
+}
+
+.ruta-opcion-sep {
+  border-top: 1px solid var(--linea);
+  margin-top: 4px;
+}
+
+.ruta-sel-cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.ruta-sel-botones {
+  display: flex;
+  gap: 6px;
+}
+
+.ruta-sel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 2px;
+  border-bottom: 1px solid var(--linea);
+  cursor: pointer;
+}
+
+.ruta-sel:last-child {
+  border-bottom: 0;
+}
+
+.ruta-sel span {
+  display: flex;
+  flex-direction: column;
+}
+
+.ruta-sel small {
+  font-size: 0.78rem;
+}
+
+.lista-titulo {
+  margin: 4px 0 8px;
+}
