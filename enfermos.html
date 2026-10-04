@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" crossorigin="anonymous" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
   <link rel="stylesheet" crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
-  <link rel="stylesheet" href="styles.css?v=28" />
+  <link rel="stylesheet" href="styles.css?v=29" />
 </head>
 <!-- Lista aparte (no es el censo): enfermos a los que se les lleva la comunión -->
 <body class="pagina-enfermos">
@@ -83,6 +83,10 @@
             <label for="f-telefono">Teléfono (opcional)</label>
             <input id="f-telefono" type="tel" inputmode="tel" placeholder="0414-1234567" />
           </div>
+          <div class="form-campo">
+            <label for="f-notas">Observaciones (opcional)</label>
+            <textarea id="f-notas" rows="3" placeholder="Ej.: recibe la comunión los viernes, tocar fuerte, es diabética…"></textarea>
+          </div>
           <div id="f-campo-ref" class="form-campo">
             <label for="f-referencia">Dirección o referencia (opcional)</label>
             <input id="f-referencia" type="text" autocomplete="off" placeholder="Calle 86, casa azul al lado de la bodega" />
@@ -106,6 +110,27 @@
       <div class="hoja-pie">
         <button type="button" class="btn btn-secundario" data-accion="cerrar">Cancelar</button>
         <button id="f-guardar" type="button" class="btn btn-principal" data-accion="guardar">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hoja: observaciones de las personas de una casa -->
+  <div id="hoja-obs" class="hoja" hidden>
+    <div class="hoja-fondo" data-accion="cerrar-obs"></div>
+    <div class="hoja-panel" role="dialog" aria-modal="true" aria-labelledby="titulo-obs">
+      <div class="hoja-cab">
+        <h2 id="titulo-obs">Observaciones</h2>
+        <button type="button" class="btn btn-icono" data-accion="cerrar-obs" aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+        </button>
+      </div>
+      <div class="hoja-cuerpo">
+        <p id="obs-casa" class="texto-suave obs-casa"></p>
+        <div id="obs-campos" class="form-seccion"></div>
+      </div>
+      <div class="hoja-pie">
+        <button type="button" class="btn btn-secundario" data-accion="cerrar-obs">Cancelar</button>
+        <button type="button" class="btn btn-principal" data-accion="guardar-obs">Guardar</button>
       </div>
     </div>
   </div>
@@ -150,6 +175,6 @@
   <script crossorigin="anonymous" src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <script src="config.js?v=2"></script>
   <script src="zonas.js?v=4"></script>
-  <script src="enfermos.js?v=6"></script>
+  <script src="enfermos.js?v=7"></script>
 </body>
 </html>

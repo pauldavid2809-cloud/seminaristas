@@ -134,7 +134,8 @@ async function cargar() {
       lng: x.lng,
       zona: (x.zona || "").trim(),
       foto: x.foto || null,
-      casa: x.casa || null, // id del primer registrado en la casa (null = es el primero)
+      casa: x.casa || null, // id del primero que se registró en la casa (null = es el primero)
+      notas: x.notas || null,
       creado: x.creado_en,
     }));
     usandoCopia = null;
@@ -235,6 +236,17 @@ function fotoDe(e) {
   return enCola?.foto || urlFoto(e.foto);
 }
 
+/* Observaciones: las que esperan señal en este teléfono o las guardadas */
+function notasDe(p) {
+  const enCola = cola().filter((r) => r.tipo === "notas" && r.id === p.id).pop();
+  return enCola ? enCola.notas : p.notas;
+}
+
+function htmlNotas(p, conNombre = false) {
+  const n = notasDe(p);
+  return n ? `<span class="enfermo-obs">📝 ${conNombre ? `<b>${esc(p.nombre.split(" ")[0])}:</b> ` : ""}${esc(n)}</span>` : "";
+}
+
 function errorDeCasa(e) {
   return /'casa'|column.*casa|casa.*column/i.test(`${e?.message || ""}`);
 }
@@ -272,6 +284,11 @@ async function subirFoto(ruta, dataUrl) {
 
 async function enviar(registro) {
   if (registro.foto) await subirFoto(registro.fotoRuta, registro.foto);
+  if (registro.tipo === "notas") {
+    const { error } = await sb.from(TABLA).update({ notas: registro.notas }).eq("id", registro.id);
+    if (error) throw error;
+    return;
+  }
   if (registro.tipo === "foto") {
     const { error } = await sb.from(TABLA).update({ foto: registro.fotoRuta }).eq("id", registro.id);
     if (error) throw error;
@@ -452,13 +469,14 @@ function pintarLista() {
             .map(
               (p) => `<strong>${esc(p.nombre)}</strong>${
                 p.telefono ? `<a class="enfermo-tel" href="tel:${esc(p.telefono)}">📞 ${esc(formatoLocal(p.telefono))}</a>` : ""
-              }`
+              }${htmlNotas(p)}`
             )
             .join("")}
           <span class="texto-suave">${esc(c.zona)}${c.referencia ? ` · ${esc(c.referencia)}` : ""}</span>
         </div>
         <a class="btn btn-principal btn-chip enfermo-llegar" href="${linkComoLlegar(c.lat, c.lng)}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 21 3l-8 18-2-8z" /></svg>Cómo llegar</a>
         <div class="enfermo-acciones">
+          <button type="button" class="enfermo-accion" data-accion="observaciones" data-id="${esc(c.id)}">📝 Observaciones</button>
           <button type="button" class="enfermo-accion" data-accion="otra-persona" data-id="${esc(c.id)}">➕ Otra persona en esta casa</button>
           ${c.foto ? "" : `<button type="button" class="enfermo-accion" data-accion="agregar-foto" data-id="${esc(c.id)}">📷 Agregar foto</button>`}
         </div>
@@ -638,6 +656,7 @@ function pintarRuta() {
           <span class="enfermo-num${hecha ? " visitado" : ""}">${hecha ? "✓" : i + 1}</span>
           <div class="enfermo-datos">
             <strong>${esc(textoNombres(e))}</strong>
+            ${e.personas.map((p) => htmlNotas(p, varios)).join("")}
             <span class="texto-suave">${e === siguiente ? "Siguiente · " : ""}${varios ? `${e.personas.length} personas · ` : ""}${esc(e.zona)}${e.referencia ? ` · ${esc(e.referencia)}` : ""}</span>
           </div>
           <button type="button" class="btn btn-chip ${hecha ? "btn-suave" : "btn-secundario"}" data-accion="visitado" data-id="${esc(e.id)}" aria-pressed="${hecha}">${hecha ? "Visitado" : "Listo"}</button>
@@ -847,6 +866,7 @@ function abrirFormulario(casa = null) {
   $("#f-nombre").value = "";
   $("#f-telefono").value = "";
   $("#f-referencia").value = "";
+  $("#f-notas").value = "";
   $("#f-autoriza").checked = false;
   ponerFotoForm(null);
   $("#f-error").hidden = true;
@@ -922,6 +942,7 @@ async function guardar() {
       lng: casa ? casa.lng : formUbic.lng,
       precision_m: !casa && formUbic.precision != null ? Math.round(formUbic.precision) : null,
       consentimiento_en: new Date().toISOString(),
+      notas: $("#f-notas").value.trim() || null,
     },
   };
   if (casa) registro.fila.casa = casa.id;
@@ -1021,6 +1042,56 @@ function verFoto(src) {
   visor.hidden = false;
 }
 
+let obsCasa = null;
+
+function abrirObservaciones(casa) {
+  if (!casa) return;
+  obsCasa = casa;
+  $("#obs-casa").textContent = `${casa.zona}${casa.referencia ? ` · ${casa.referencia}` : ""}`;
+  $("#obs-campos").innerHTML = casa.personas
+    .map(
+      (p) => `<div class="form-campo">
+        <label for="obs-${esc(p.id)}">${esc(p.nombre)}</label>
+        <textarea id="obs-${esc(p.id)}" data-id="${esc(p.id)}" rows="3" placeholder="Ej.: recibe la comunión los viernes, tocar fuerte, es diabética…">${esc(notasDe(p) || "")}</textarea>
+      </div>`
+    )
+    .join("");
+  $("#hoja-obs").hidden = false;
+  document.body.classList.add("hoja-abierta");
+  setTimeout(() => $("#obs-campos textarea")?.focus(), 80);
+}
+
+function cerrarObservaciones() {
+  $("#hoja-obs").hidden = true;
+  document.body.classList.remove("hoja-abierta");
+  obsCasa = null;
+}
+
+async function guardarObservaciones() {
+  if (!obsCasa) return;
+  const cambios = [...document.querySelectorAll("#obs-campos textarea")]
+    .map((t) => ({ tipo: "notas", id: t.dataset.id, notas: t.value.trim() || null }))
+    .filter((c) => c.notas !== (notasDe(obsCasa.personas.find((p) => p.id === c.id)) || null));
+  cerrarObservaciones();
+  if (!cambios.length) return;
+  let enCola = 0;
+  for (const c of cambios) {
+    try {
+      await enviar(c);
+    } catch (e) {
+      if (!errorDeRed(e)) {
+        toast(`No se pudo guardar: ${e.message}`);
+        return;
+      }
+      guardarCola([...cola(), c]);
+      enCola++;
+    }
+  }
+  if (!enCola) await cargar();
+  pintarTodo();
+  toast(enCola ? "Sin señal: las observaciones se enviarán al volver la señal" : "Observaciones guardadas");
+}
+
 function uuidSimple() {
   return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) =>
     (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)
@@ -1034,6 +1105,9 @@ document.addEventListener("click", (ev) => {
   if (!el) return;
   const a = el.dataset.accion;
   if (a === "abrir") abrirFormulario();
+  else if (a === "observaciones") abrirObservaciones(casas().find((c) => c.id === el.dataset.id));
+  else if (a === "cerrar-obs") cerrarObservaciones();
+  else if (a === "guardar-obs") guardarObservaciones();
   else if (a === "otra-persona") abrirFormulario(casas().find((c) => c.id === el.dataset.id) || null);
   else if (a === "cerrar") cerrarFormulario();
   else if (a === "guardar") guardar();
@@ -1057,6 +1131,7 @@ document.addEventListener("keydown", (ev) => {
   if (ev.key !== "Escape") return;
   if (!$("#visor").hidden) $("#visor").hidden = true;
   else if (!$("#hoja").hidden) cerrarFormulario();
+  else if (!$("#hoja-obs").hidden) cerrarObservaciones();
   else if (!$("#hoja-ruta").hidden) cerrarRuta();
 });
 
