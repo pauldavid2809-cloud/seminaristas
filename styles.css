@@ -2569,3 +2569,21 @@ body.pagina-enfermos {
 .misma-casa[hidden] {
   display: none;
 }
+
+/* Observaciones */
+.enfermo-obs {
+  display: block;
+  margin-top: 3px;
+  padding: 6px 9px;
+  border-radius: 8px;
+  background: var(--ambar-suave);
+  color: var(--primario-oscuro);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.obs-casa {
+  margin: 0 0 10px;
+}
