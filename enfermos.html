@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" crossorigin="anonymous" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
   <link rel="stylesheet" crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
-  <link rel="stylesheet" href="styles.css?v=25" />
+  <link rel="stylesheet" href="styles.css?v=26" />
 </head>
 <!-- Lista aparte (no es el censo): enfermos a los que se les lleva la comunión -->
 <body class="pagina-enfermos">
@@ -29,7 +29,14 @@
     <div class="mapa-marco">
       <div id="mapa-enfermos" class="mapa-enfermos"></div>
     </div>
-    <p id="contador" class="censo-contador"></p>
+    <div class="enfermos-barra">
+      <p id="contador" class="censo-contador"></p>
+      <button id="btn-ruta" type="button" class="btn btn-suave btn-chip" data-accion="abrir-ruta" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="19" r="2" /><circle cx="18" cy="5" r="2" /><path d="M8 19h7.5a3.5 3.5 0 0 0 0-7h-7a3.5 3.5 0 0 1 0-7H16" /></svg>
+        Armar recorrido
+      </button>
+    </div>
+    <div id="ruta"></div>
     <div id="lista-enfermos"></div>
   </main>
 
@@ -89,10 +96,46 @@
     </div>
   </div>
 
+  <!-- Hoja: armar el recorrido de visitas -->
+  <div id="hoja-ruta" class="hoja" hidden>
+    <div class="hoja-fondo" data-accion="cerrar-ruta"></div>
+    <div class="hoja-panel" role="dialog" aria-modal="true" aria-labelledby="titulo-ruta">
+      <div class="hoja-cab">
+        <h2 id="titulo-ruta">Armar recorrido</h2>
+        <button type="button" class="btn btn-icono" data-accion="cerrar-ruta" aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+        </button>
+      </div>
+      <div class="hoja-cuerpo">
+        <div class="form-seccion">
+          <span class="form-seccion-titulo">Salir desde</span>
+          <label class="ruta-opcion"><input type="radio" name="r-inicio" value="parroquia" checked /> <span>⛪ La parroquia</span></label>
+          <label class="ruta-opcion"><input id="r-inicio-yo" type="radio" name="r-inicio" value="yo" /> <span>📍 Donde estoy ahora <small id="r-yo-nota" class="texto-suave"></small></span></label>
+          <label class="ruta-opcion ruta-opcion-sep"><input id="r-volver" type="checkbox" /> <span>Volver a la parroquia al final</span></label>
+        </div>
+        <div class="form-seccion">
+          <div class="ruta-sel-cab">
+            <span class="form-seccion-titulo">¿A quiénes vas a visitar?</span>
+            <span class="ruta-sel-botones">
+              <button type="button" class="btn btn-secundario btn-chip" data-accion="ruta-todos">Todos</button>
+              <button type="button" class="btn btn-secundario btn-chip" data-accion="ruta-ninguno">Ninguno</button>
+            </span>
+          </div>
+          <div id="r-lista"></div>
+        </div>
+        <p id="r-error" class="form-error" hidden></p>
+      </div>
+      <div class="hoja-pie">
+        <button type="button" class="btn btn-secundario" data-accion="cerrar-ruta">Cancelar</button>
+        <button type="button" class="btn btn-principal" data-accion="armar-ruta">Armar recorrido</button>
+      </div>
+    </div>
+  </div>
+
   <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script crossorigin="anonymous" src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <script src="config.js?v=2"></script>
   <script src="zonas.js?v=4"></script>
-  <script src="enfermos.js?v=3"></script>
+  <script src="enfermos.js?v=4"></script>
 </body>
 </html>
