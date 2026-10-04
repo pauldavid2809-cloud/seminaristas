@@ -2090,3 +2090,84 @@ body.pagina-publica {
     display: inline;
   }
 }
+
+/* ---------- Página: Visita a enfermos ---------- */
+
+body.pagina-enfermos {
+  padding-bottom: calc(96px + var(--seguro-abajo));
+}
+
+.pagina-enfermos .fab {
+  bottom: calc(20px + var(--seguro-abajo));
+}
+
+.mapa-enfermos {
+  height: 46vh;
+  height: 46dvh;
+  min-height: 260px;
+  border-radius: var(--radio);
+  border: 1px solid var(--linea);
+  box-shadow: var(--sombra);
+  overflow: hidden;
+  background: var(--primario-suave);
+  margin-bottom: 14px;
+}
+
+.pin-enfermo span {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--rojo);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  border: 2.5px solid #fff;
+  box-shadow: 0 2px 6px rgba(18, 41, 64, 0.4);
+}
+
+.enfermo-fila {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+
+.enfermo-num {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--rojo);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.85rem;
+  display: grid;
+  place-items: center;
+}
+
+.enfermo-num.cola {
+  background: var(--ambar-suave);
+  font-size: 1rem;
+}
+
+.enfermo-datos {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.enfermo-datos strong {
+  color: var(--primario-oscuro);
+}
+
+.enfermo-tel {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--primario);
+  text-decoration: none;
+  margin-top: 2px;
+}
