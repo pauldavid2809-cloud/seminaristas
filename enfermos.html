@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" crossorigin="anonymous" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
   <link rel="stylesheet" crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
-  <link rel="stylesheet" href="styles.css?v=27" />
+  <link rel="stylesheet" href="styles.css?v=28" />
 </head>
 <!-- Lista aparte (no es el censo): enfermos a los que se les lleva la comunión -->
 <body class="pagina-enfermos">
@@ -62,7 +62,8 @@
         </button>
       </div>
       <div class="hoja-cuerpo">
-        <div class="form-seccion">
+        <div id="f-misma-casa" class="misma-casa" hidden></div>
+        <div id="f-sec-ubic" class="form-seccion">
           <span class="form-seccion-titulo">Ubicación de la casa</span>
           <div id="ubic-estado" class="ubic-estado"></div>
           <div id="ubic-zona" class="ubic-zona" hidden></div>
@@ -82,11 +83,11 @@
             <label for="f-telefono">Teléfono (opcional)</label>
             <input id="f-telefono" type="tel" inputmode="tel" placeholder="0414-1234567" />
           </div>
-          <div class="form-campo">
+          <div id="f-campo-ref" class="form-campo">
             <label for="f-referencia">Dirección o referencia (opcional)</label>
             <input id="f-referencia" type="text" autocomplete="off" placeholder="Calle 86, casa azul al lado de la bodega" />
           </div>
-          <div class="form-campo">
+          <div id="f-campo-foto" class="form-campo">
             <label>Foto del lugar (opcional)</label>
             <div id="f-foto-vista" class="foto-vista" hidden>
               <img alt="Foto del lugar" />
@@ -149,6 +150,6 @@
   <script crossorigin="anonymous" src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <script src="config.js?v=2"></script>
   <script src="zonas.js?v=4"></script>
-  <script src="enfermos.js?v=5"></script>
+  <script src="enfermos.js?v=6"></script>
 </body>
 </html>

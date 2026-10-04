@@ -24,6 +24,7 @@ const LS_COLA = "comunion_pendientes";
 const LS_COPIA = "comunion_copia";
 const GPS_PRECISION_BUENA = 20;
 const GPS_ESPERA_MS = 15000;
+const MISMA_CASA_M = 15; // al registrar tan cerca de una casa, se pregunta si es la misma
 
 const $ = (s) => document.querySelector(s);
 
@@ -105,7 +106,7 @@ function toast(texto) {
 
 /* ---------- Datos ---------- */
 
-let enfermos = []; // { id, nombre, telefono, referencia, lat, lng, zona, foto, creado }
+let enfermos = []; // { id, casa, nombre, telefono, referencia, lat, lng, zona, foto, creado }
 let usandoCopia = null;
 let faltaTabla = false; // la tabla aún no se creó en Supabase
 
@@ -133,6 +134,7 @@ async function cargar() {
       lng: x.lng,
       zona: (x.zona || "").trim(),
       foto: x.foto || null,
+      casa: x.casa || null, // id del primer registrado en la casa (null = es el primero)
       creado: x.creado_en,
     }));
     usandoCopia = null;
@@ -157,6 +159,40 @@ async function cargar() {
       /* sin copia guardada */
     }
   }
+}
+
+/* ---------- Casas ---------- */
+
+/* Los enfermos agrupados por casa: una parada, un pin y una tarjeta por casa.
+   La casa se identifica con el id del primero que se registró en ella. */
+function casas() {
+  const grupos = new Map();
+  enfermos
+    .filter((e) => e.lat != null)
+    .forEach((e) => {
+      const id = e.casa || e.id;
+      if (!grupos.has(id)) grupos.set(id, []);
+      grupos.get(id).push(e);
+    });
+  return [...grupos].map(([id, personas]) => {
+    personas.sort((a, b) => (a.creado < b.creado ? -1 : 1));
+    const base = personas.find((p) => p.id === id) || personas[0];
+    return {
+      id,
+      personas,
+      lat: base.lat,
+      lng: base.lng,
+      zona: base.zona,
+      referencia: personas.map((p) => p.referencia).find(Boolean) || null,
+      foto: personas.map(fotoDe).find(Boolean) || null,
+      nombres: personas.map((p) => p.nombre),
+    };
+  });
+}
+
+function textoNombres(c) {
+  const n = c.nombres;
+  return n.length > 1 ? `${n.slice(0, -1).join(", ")} y ${n[n.length - 1]}` : n[0];
 }
 
 /* ---------- Cola sin señal ---------- */
@@ -197,6 +233,10 @@ function urlFoto(ruta) {
 function fotoDe(e) {
   const enCola = cola().filter((r) => r.tipo === "foto" && r.id === e.id).pop();
   return enCola?.foto || urlFoto(e.foto);
+}
+
+function errorDeCasa(e) {
+  return /'casa'|column.*casa|casa.*column/i.test(`${e?.message || ""}`);
 }
 
 function errorDeFotos(e) {
@@ -323,19 +363,20 @@ function pintarMapa() {
   if (r) {
     L.polyline(puntosRuta(r), { color: "#1d3a5f", weight: 3, opacity: 0.75, dashArray: "6 8", interactive: false }).addTo(capaEnfermos);
   }
-  enfermos
-    .filter((e) => e.lat != null)
-    .forEach((e) => {
-      const n = numeroDe(e);
-      const clase = !r ? "" : n == null ? "fuera-ruta" : r.visitados.includes(e.id) ? "visitado" : "";
-      L.marker([e.lat, e.lng], { icon: iconoEnfermo(n == null ? "" : clase === "visitado" ? "✓" : n, clase), pane: "enfermos" })
-        .bindPopup(
-          `<div class="popup-casa">${fotoDe(e) ? `<img class="popup-foto" src="${esc(fotoDe(e))}" alt="Foto del lugar" data-accion="ver-foto" data-src="${esc(fotoDe(e))}" />` : ""}<strong>${n != null && r ? `${n}. ` : ""}${esc(e.nombre)}</strong><p>${esc(e.zona)}${
-            e.referencia ? ` · ${esc(e.referencia)}` : ""
-          }</p><a class="btn btn-principal" href="${linkComoLlegar(e.lat, e.lng)}" target="_blank" rel="noopener">Cómo llegar</a></div>`
-        )
-        .addTo(capaEnfermos);
-    });
+  casas().forEach((c) => {
+    const n = numeroDe(c);
+    const clase = !r ? "" : n == null ? "fuera-ruta" : r.visitados.includes(c.id) ? "visitado" : "";
+    L.marker([c.lat, c.lng], { icon: iconoEnfermo(n == null ? "" : clase === "visitado" ? "✓" : n, clase), pane: "enfermos" })
+      .bindPopup(
+        `<div class="popup-casa">${c.foto ? `<img class="popup-foto" src="${esc(c.foto)}" alt="Foto del lugar" data-accion="ver-foto" data-src="${esc(c.foto)}" />` : ""}<strong>${
+          n != null && r ? `${n}. ` : ""
+        }${esc(textoNombres(c))}</strong><p>${esc(c.zona)}${c.referencia ? ` · ${esc(c.referencia)}` : ""}</p><a class="btn btn-principal" href="${linkComoLlegar(
+          c.lat,
+          c.lng
+        )}" target="_blank" rel="noopener">Cómo llegar</a></div>`
+      )
+      .addTo(capaEnfermos);
+  });
 }
 
 function seguirMiUbicacion() {
@@ -383,37 +424,47 @@ function pintarAvisos() {
 }
 
 function pintarLista() {
-  const pendientesCola = cola().filter((r) => r.fila).map((r) => ({ nombre: r.fila.nombre, zona: r.zonaNombre, enCola: true }));
-  const todos = [...pendientesCola, ...enfermos];
-  $("#contador").textContent = `${todos.length} enfermo${todos.length !== 1 ? "s" : ""} registrado${todos.length !== 1 ? "s" : ""}`;
-  if (!todos.length) {
+  const pendientesCola = cola()
+    .filter((r) => r.fila)
+    .map((r) => ({ nombre: r.fila.nombre, zona: r.zonaNombre }));
+  const lista = casas();
+  const total = enfermos.length + pendientesCola.length;
+  $("#contador").textContent =
+    `${total} enfermo${total !== 1 ? "s" : ""}` + (lista.length && lista.length !== enfermos.length ? ` en ${lista.length} casa${lista.length !== 1 ? "s" : ""}` : "");
+  if (!total) {
     $("#lista-enfermos").innerHTML = `<div class="card vacio-card"><span class="vacio-icono">🙏</span>Todavía no hay enfermos registrados.<span class="texto-suave">Toca <strong>Registrar enfermo</strong> frente a su casa.</span></div>`;
     return;
   }
-  const titulo = rutaActual() ? `<p class="censo-contador lista-titulo">Todos los enfermos</p>` : "";
-  $("#lista-enfermos").innerHTML = titulo + todos
-    .map((e) => {
-      if (e.enCola) {
-        return `<div class="card enfermo-fila"><span class="enfermo-num cola">⏳</span><div class="enfermo-datos"><strong>${esc(e.nombre)}</strong><span class="texto-suave">${esc(e.zona || "")} · esperando señal</span></div></div>`;
-      }
-      const conPunto = e.lat != null;
-      const n = conPunto ? numeroDe(e) ?? "·" : "–";
-      return `<div class="card enfermo-fila">
-        ${
-          fotoDe(e)
-            ? `<button type="button" class="enfermo-foto" data-accion="ver-foto" data-src="${esc(fotoDe(e))}" aria-label="Ver foto del lugar"><img src="${esc(fotoDe(e))}" alt="" loading="lazy" /><span class="enfermo-num${n === "·" ? " fuera-ruta" : ""}">${n}</span></button>`
-            : `<span class="enfermo-num${n === "·" ? " fuera-ruta" : ""}">${n}</span>`
-        }
+  const titulo = rutaActual() ? `<p class="censo-contador lista-titulo">Todas las casas</p>` : "";
+  const enEspera = pendientesCola.map(
+    (e) =>
+      `<div class="card enfermo-fila"><span class="enfermo-num cola">⏳</span><div class="enfermo-datos"><strong>${esc(e.nombre)}</strong><span class="texto-suave">${esc(
+        e.zona || ""
+      )} · esperando señal</span></div></div>`
+  );
+  const tarjetas = lista.map((c) => {
+    const n = numeroDe(c) ?? "·";
+    const num = `<span class="enfermo-num${n === "·" ? " fuera-ruta" : ""}">${n}</span>`;
+    return `<div class="card enfermo-fila">
+        ${c.foto ? `<button type="button" class="enfermo-foto" data-accion="ver-foto" data-src="${esc(c.foto)}" aria-label="Ver foto del lugar"><img src="${esc(c.foto)}" alt="" loading="lazy" />${num}</button>` : num}
         <div class="enfermo-datos">
-          <strong>${esc(e.nombre)}</strong>
-          <span class="texto-suave">${esc(e.zona)}${e.referencia ? ` · ${esc(e.referencia)}` : ""}</span>
-          ${e.telefono ? `<a class="enfermo-tel" href="tel:${esc(e.telefono)}">📞 ${esc(formatoLocal(e.telefono))}</a>` : ""}
-          ${fotoDe(e) ? "" : `<button type="button" class="enfermo-agregar-foto" data-accion="agregar-foto" data-id="${esc(e.id)}">📷 Agregar foto</button>`}
+          ${c.personas
+            .map(
+              (p) => `<strong>${esc(p.nombre)}</strong>${
+                p.telefono ? `<a class="enfermo-tel" href="tel:${esc(p.telefono)}">📞 ${esc(formatoLocal(p.telefono))}</a>` : ""
+              }`
+            )
+            .join("")}
+          <span class="texto-suave">${esc(c.zona)}${c.referencia ? ` · ${esc(c.referencia)}` : ""}</span>
         </div>
-        ${conPunto ? `<a class="btn btn-principal btn-chip enfermo-llegar" href="${linkComoLlegar(e.lat, e.lng)}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 21 3l-8 18-2-8z" /></svg>Cómo llegar</a>` : `<span class="texto-suave">sin ubicación</span>`}
+        <a class="btn btn-principal btn-chip enfermo-llegar" href="${linkComoLlegar(c.lat, c.lng)}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 21 3l-8 18-2-8z" /></svg>Cómo llegar</a>
+        <div class="enfermo-acciones">
+          <button type="button" class="enfermo-accion" data-accion="otra-persona" data-id="${esc(c.id)}">➕ Otra persona en esta casa</button>
+          ${c.foto ? "" : `<button type="button" class="enfermo-accion" data-accion="agregar-foto" data-id="${esc(c.id)}">📷 Agregar foto</button>`}
+        </div>
       </div>`;
-    })
-    .join("");
+  });
+  $("#lista-enfermos").innerHTML = titulo + [...enEspera, ...tarjetas].join("");
 }
 
 function pintarTodo() {
@@ -430,7 +481,7 @@ const FACTOR_CALLES = 1.3; // por las calles se camina más que en línea recta
 const METROS_POR_MINUTO = 75; // ~4,5 km/h
 const MAX_INTERMEDIAS = 9; // Google Maps acepta pocas paradas intermedias por enlace
 
-// { inicio: { tipo: "parroquia"|"yo", lat, lng }, volver, paradas: [id], visitados: [id], creada }
+// { inicio: { tipo: "parroquia"|"yo", lat, lng }, volver, paradas: [id de casa], visitados: [id de casa], creada }
 let ruta = (() => {
   try {
     return JSON.parse(localStorage.getItem(LS_RUTA) || "null");
@@ -448,19 +499,19 @@ function guardarRuta() {
   }
 }
 
-/* El recorrido guardado con los enfermos que siguen en la lista */
+/* El recorrido guardado con las casas que siguen en la lista */
 function rutaActual() {
   if (!ruta) return null;
-  const porId = Object.fromEntries(enfermos.filter((e) => e.lat != null).map((e) => [e.id, e]));
+  const porId = Object.fromEntries(casas().map((c) => [c.id, c]));
   const paradas = ruta.paradas.map((id) => porId[id]).filter(Boolean);
   if (!paradas.length) return null;
   return { ...ruta, paradas, visitados: ruta.visitados || [] };
 }
 
-function numeroDe(e) {
+function numeroDe(c) {
   const r = rutaActual();
-  if (!r) return enfermos.filter((x) => x.lat != null).indexOf(e) + 1 || null;
-  const i = r.paradas.indexOf(e);
+  if (!r) return casas().findIndex((x) => x.id === c.id) + 1 || null;
+  const i = r.paradas.findIndex((x) => x.id === c.id);
   return i === -1 ? null : i + 1;
 }
 
@@ -550,8 +601,7 @@ function etiquetaTramo(t, total) {
 }
 
 function pintarRuta() {
-  const conPunto = enfermos.filter((e) => e.lat != null);
-  $("#btn-ruta").hidden = !conPunto.length;
+  $("#btn-ruta").hidden = !casas().length;
   const r = rutaActual();
   const caja = $("#ruta");
   if (!r) {
@@ -583,15 +633,16 @@ function pintarRuta() {
       ${r.paradas
         .map((e, i) => {
           const hecha = r.visitados.includes(e.id);
+          const varios = e.personas.length > 1;
           return `<li class="ruta-parada${hecha ? " hecha" : ""}${e === siguiente ? " siguiente" : ""}">
           <span class="enfermo-num${hecha ? " visitado" : ""}">${hecha ? "✓" : i + 1}</span>
           <div class="enfermo-datos">
-            <strong>${esc(e.nombre)}</strong>
-            <span class="texto-suave">${e === siguiente ? "Siguiente · " : ""}${esc(e.zona)}${e.referencia ? ` · ${esc(e.referencia)}` : ""}</span>
+            <strong>${esc(textoNombres(e))}</strong>
+            <span class="texto-suave">${e === siguiente ? "Siguiente · " : ""}${varios ? `${e.personas.length} personas · ` : ""}${esc(e.zona)}${e.referencia ? ` · ${esc(e.referencia)}` : ""}</span>
           </div>
           <button type="button" class="btn btn-chip ${hecha ? "btn-suave" : "btn-secundario"}" data-accion="visitado" data-id="${esc(e.id)}" aria-pressed="${hecha}">${hecha ? "Visitado" : "Listo"}</button>
-          <a class="btn btn-principal btn-icono-chip" href="${linkComoLlegar(e.lat, e.lng)}" target="_blank" rel="noopener" aria-label="Cómo llegar a ${esc(e.nombre)}" title="Cómo llegar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 21 3l-8 18-2-8z" /></svg></a>
-          ${e === siguiente && fotoDe(e) ? `<img class="ruta-foto" src="${esc(fotoDe(e))}" alt="Foto del lugar" data-accion="ver-foto" data-src="${esc(fotoDe(e))}" />` : ""}
+          <a class="btn btn-principal btn-icono-chip" href="${linkComoLlegar(e.lat, e.lng)}" target="_blank" rel="noopener" aria-label="Cómo llegar a la casa de ${esc(textoNombres(e))}" title="Cómo llegar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 21 3l-8 18-2-8z" /></svg></a>
+          ${e === siguiente && e.foto ? `<img class="ruta-foto" src="${esc(e.foto)}" alt="Foto del lugar" data-accion="ver-foto" data-src="${esc(e.foto)}" />` : ""}
         </li>`;
         })
         .join("")}
@@ -602,12 +653,11 @@ function pintarRuta() {
 }
 
 function abrirRuta() {
-  const conPunto = enfermos.filter((e) => e.lat != null);
   const elegidos = ruta ? new Set(ruta.paradas) : null;
-  $("#r-lista").innerHTML = conPunto
+  $("#r-lista").innerHTML = casas()
     .map(
-      (e) => `<label class="ruta-sel"><input type="checkbox" value="${esc(e.id)}" ${!elegidos || elegidos.has(e.id) ? "checked" : ""} />
-        <span><strong>${esc(e.nombre)}</strong><small class="texto-suave">${esc(e.zona)}</small></span></label>`
+      (c) => `<label class="ruta-sel"><input type="checkbox" value="${esc(c.id)}" ${!elegidos || elegidos.has(c.id) ? "checked" : ""} />
+        <span><strong>${esc(textoNombres(c))}</strong><small class="texto-suave">${esc(c.zona)}${c.personas.length > 1 ? ` · ${c.personas.length} personas` : ""}</small></span></label>`
     )
     .join("");
   const yo = $("#r-inicio-yo");
@@ -627,10 +677,10 @@ function cerrarRuta() {
 
 function armarRuta() {
   const ids = [...document.querySelectorAll("#r-lista input:checked")].map((x) => x.value);
-  const paradas = enfermos.filter((e) => e.lat != null && ids.includes(e.id));
+  const paradas = casas().filter((c) => ids.includes(c.id));
   if (!paradas.length) {
     const el = $("#r-error");
-    el.textContent = "Marca al menos un enfermo para el recorrido.";
+    el.textContent = "Marca al menos una casa para el recorrido.";
     el.hidden = false;
     return;
   }
@@ -782,9 +832,16 @@ function capturarGPS() {
   );
 }
 
-function abrirFormulario() {
-  formUbic = null;
+let formCasa = null; // casa a la que se agrega otra persona (sin GPS ni mapa)
+
+function abrirFormulario(casa = null) {
+  formCasa = casa;
+  formUbic = casa ? { lat: casa.lat, lng: casa.lng, precision: null } : null;
   pinForm = null;
+  $("#titulo-hoja").textContent = casa ? "Otra persona en esta casa" : "Registrar enfermo";
+  $("#f-misma-casa").hidden = !casa;
+  if (casa) $("#f-misma-casa").innerHTML = `<strong>🏠 Misma casa que ${esc(textoNombres(casa))}</strong><span>${esc(casa.zona)}${casa.referencia ? ` · ${esc(casa.referencia)}` : ""}</span>`;
+  for (const id of ["#f-sec-ubic", "#f-campo-ref", "#f-campo-foto"]) $(id).hidden = !!casa;
   $("#hoja").hidden = false;
   document.body.classList.add("hoja-abierta");
   $("#f-nombre").value = "";
@@ -793,6 +850,10 @@ function abrirFormulario() {
   $("#f-autoriza").checked = false;
   ponerFotoForm(null);
   $("#f-error").hidden = true;
+  if (casa) {
+    setTimeout(() => $("#f-nombre").focus(), 80);
+    return;
+  }
   estadoUbic("", "Sin ubicación todavía");
   setTimeout(() => {
     if (HAY_MAPAS && !mapaForm) {
@@ -838,22 +899,33 @@ async function guardar() {
   if (faltaTabla) return errorForm("La lista todavía no está activada en Supabase (falta crear la tabla).");
   const r = zonaParaPunto(formUbic.lat, formUbic.lng);
 
-  const referencia = $("#f-referencia").value.trim();
+  // ¿Ya hay una casa registrada aquí mismo?
+  let casa = formCasa;
+  if (!casa) {
+    const cerca = casas()
+      .map((c) => ({ c, d: distanciaMetros([c.lat, c.lng], [formUbic.lat, formUbic.lng]) }))
+      .filter((x) => x.d <= MISMA_CASA_M)
+      .sort((a, b) => a.d - b.d)[0];
+    if (cerca && confirm(`Aquí cerca (a ${Math.round(cerca.d)} m) ya está la casa de ${textoNombres(cerca.c)}.\n\n¿${nombre} vive en esa misma casa?`)) casa = cerca.c;
+  }
+
+  const referencia = casa ? "" : $("#f-referencia").value.trim();
   const registro = {
-    zonaNombre: r ? nombreZona(r.zona) : "",
+    zonaNombre: casa ? casa.zona : r ? nombreZona(r.zona) : "",
     fila: {
       id: crypto.randomUUID ? crypto.randomUUID() : uuidSimple(),
       nombre,
       telefono: normalizarTelefono($("#f-telefono").value),
       referencia: referencia || null,
-      zona: r ? r.zona.nombre : null,
-      lat: formUbic.lat,
-      lng: formUbic.lng,
-      precision_m: formUbic.precision != null ? Math.round(formUbic.precision) : null,
+      zona: casa ? casa.zona : r ? r.zona.nombre : null,
+      lat: casa ? casa.lat : formUbic.lat,
+      lng: casa ? casa.lng : formUbic.lng,
+      precision_m: !casa && formUbic.precision != null ? Math.round(formUbic.precision) : null,
       consentimiento_en: new Date().toISOString(),
     },
   };
-  if (formFoto) {
+  if (casa) registro.fila.casa = casa.id;
+  if (formFoto && !casa) {
     registro.foto = formFoto;
     registro.fotoRuta = `${registro.fila.id}/${Date.now()}.jpg`;
     registro.fila.foto = registro.fotoRuta;
@@ -866,7 +938,7 @@ async function guardar() {
     cerrarFormulario();
     await cargar();
     pintarTodo();
-    toast(`${nombre} quedó en la lista de comunión`);
+    toast(casa ? `${nombre} quedó en la casa de ${casa.nombres[0]}` : `${nombre} quedó en la lista de comunión`);
   } catch (e) {
     if (errorDeRed(e)) {
       let aviso = "Sin señal: quedó guardado y se enviará al volver la señal";
@@ -880,6 +952,8 @@ async function guardar() {
       cerrarFormulario();
       pintarTodo();
       toast(aviso);
+    } else if (casa && errorDeCasa(e)) {
+      errorForm("Falta activar en Supabase lo de varias personas en la misma casa (una línea de SQL).");
     } else if (registro.foto && errorDeFotos(e)) {
       errorForm("Las fotos todavía no están activadas en Supabase. Quita la foto para guardar, o activa las fotos primero.");
     } else {
@@ -960,6 +1034,7 @@ document.addEventListener("click", (ev) => {
   if (!el) return;
   const a = el.dataset.accion;
   if (a === "abrir") abrirFormulario();
+  else if (a === "otra-persona") abrirFormulario(casas().find((c) => c.id === el.dataset.id) || null);
   else if (a === "cerrar") cerrarFormulario();
   else if (a === "guardar") guardar();
   else if (a === "gps") capturarGPS();

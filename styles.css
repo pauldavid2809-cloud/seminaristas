@@ -2516,3 +2516,56 @@ body.pagina-enfermos {
   font-size: 0.7rem;
   border: 2px solid #fff;
 }
+
+/* Varias personas en la misma casa */
+.enfermo-datos .enfermo-tel + strong,
+.enfermo-datos strong + strong {
+  margin-top: 4px;
+}
+
+.enfermo-fila {
+  flex-wrap: wrap;
+}
+
+.enfermo-acciones {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  padding-top: 10px;
+  border-top: 1px solid var(--linea);
+}
+
+.enfermo-accion {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--primario);
+  cursor: pointer;
+}
+
+.misma-casa {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--primario-suave);
+  border-radius: var(--radio);
+  padding: 14px;
+  margin-bottom: 12px;
+  color: var(--primario-oscuro);
+  font-size: 0.9rem;
+}
+
+.misma-casa span {
+  color: var(--tinta-suave);
+  font-size: 0.82rem;
+}
+
+.form-campo[hidden],
+.form-seccion[hidden],
+.misma-casa[hidden] {
+  display: none;
+}
