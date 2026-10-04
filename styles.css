@@ -1124,6 +1124,8 @@ main {
 }
 
 .form-mapa {
+  position: relative;
+  isolation: isolate;
   height: 210px;
   border-radius: var(--radio-sm);
   border: 1px solid var(--linea);
@@ -1157,6 +1159,7 @@ main {
 
 .mapa-marco {
   position: relative;
+  isolation: isolate; /* que las capas de Leaflet (z-index 400+) no tapen la hoja */
 }
 
 .mapa-general {
@@ -2170,4 +2173,17 @@ body.pagina-enfermos {
   color: var(--primario);
   text-decoration: none;
   margin-top: 2px;
+}
+
+.enfermo-llegar {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.enfermo-llegar svg {
+  width: 15px;
+  height: 15px;
 }

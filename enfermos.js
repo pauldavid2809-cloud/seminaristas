@@ -337,7 +337,7 @@ function pintarLista() {
           <span class="texto-suave">${esc(e.zona)}${e.referencia && !e.referencia.startsWith("(") ? ` · ${esc(e.referencia)}` : ""}</span>
           ${e.telefono ? `<a class="enfermo-tel" href="tel:${esc(e.telefono)}">📞 ${esc(formatoLocal(e.telefono))}</a>` : ""}
         </div>
-        ${conPunto ? `<a class="btn btn-suave btn-chip" href="${linkComoLlegar(e.lat, e.lng)}" target="_blank" rel="noopener">Llegar</a>` : `<span class="texto-suave">sin ubicación</span>`}
+        ${conPunto ? `<a class="btn btn-principal btn-chip enfermo-llegar" href="${linkComoLlegar(e.lat, e.lng)}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 21 3l-8 18-2-8z" /></svg>Cómo llegar</a>` : `<span class="texto-suave">sin ubicación</span>`}
       </div>`;
     })
     .join("");
