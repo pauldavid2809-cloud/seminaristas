@@ -7,6 +7,77 @@
 
 const DIPTICOS = [
   {
+    "id": "2026-10-11",
+    "fecha": "2026-10-11",
+    "fechaTexto": "Domingo 11 de octubre de 2026",
+    "titulo": "Dios nos invita a su fiesta",
+    "cita": "Evangelio según san Mateo 22, 1-14",
+    "tiempo": "XXVIII Domingo del Tiempo Ordinario · Ciclo A",
+    "evangelio": {
+      "encabezado": "Lectura del santo Evangelio según san Mateo 22, 1-14",
+      "parrafos": [
+        "En aquel tiempo, volvió Jesús a hablar en parábolas a los sumos sacerdotes y a los ancianos del pueblo, diciendo: \"El Reino de los cielos es semejante a un rey que preparó un banquete de bodas para su hijo. Mandó a sus criados que llamaran a los invitados, pero éstos no quisieron ir.",
+        "Envió de nuevo a otros criados que les dijeran: 'Tengo preparado el banquete; he hecho matar mis terneras y los otros animales gordos; todo está listo. Vengan a la boda'. Pero los invitados no hicieron caso. Uno se fue a su campo, otro a su negocio y los demás se les echaron encima a los criados, los insultaron y los mataron.",
+        "Entonces el rey se llenó de cólera y mandó sus tropas, que dieron muerte a aquellos asesinos y prendieron fuego a la ciudad.",
+        "Luego les dijo a sus criados: 'La boda está preparada; pero los que habían sido invitados no fueron dignos. Salgan, pues, a los cruces de los caminos y conviden al banquete de bodas a todos los que encuentren'. Los criados salieron a los caminos y reunieron a todos los que encontraron, malos y buenos, y la sala del banquete se llenó de convidados.",
+        "Cuando el rey entró a saludar a los convidados, vio entre ellos a un hombre que no iba vestido con traje de fiesta y le preguntó: 'Amigo, ¿cómo has entrado aquí sin traje de fiesta?' Aquel hombre se quedó callado. Entonces el rey dijo a los criados: 'Átenlo de pies y manos y arrójenlo fuera, a las tinieblas. Allí será el llanto y la desesperación'. Porque muchos son los llamados y pocos los escogidos\"."
+      ],
+      "cierre": "Palabra del Señor. R/. Gloria a ti, Señor Jesús"
+    },
+    "reflexion": [
+      "Dios prepara una fiesta y te invita. Un rey celebra la boda de su hijo y no escatima nada: manda a sus siervos a llamar a todos. Así es Dios con nosotros. No nos ofrece una carga pesada, sino un banquete de vida, de perdón y de alegría. La invitación es para ti, para tu familia y para tu comunidad.",
+      "Sin embargo, los invitados no quisieron ir: uno se fue a su campo, otro a sus negocios. Qué fácil es que el trabajo, las preocupaciones y el cansancio ocupen el lugar de Dios, sobre todo en tiempos difíciles. Pero Dios no se rinde. Manda a salir a los caminos e invitar a todos, buenos y malos. Nadie queda fuera: la puerta está abierta para el que quiera entrar.",
+      "Ese banquete comienza en cada Eucaristía, donde Cristo se nos da como alimento, y se prolonga en la vida diaria. Por eso el invitado debe llevar el traje de fiesta. No es ropa elegante, sino un corazón convertido que perdona, sirve y ama, y que se nota en las obras de caridad y de misericordia.",
+      "Hoy el Señor te dice: ven. Ven a la oración de cada día, a la Misa del domingo, al servicio de la comunidad y a alguno de los grupos de apostolado de la parroquia. Aunque el camino sea duro, quien se sienta a la mesa del Señor encuentra esperanza, y la esperanza no defrauda."
+    ],
+    "preguntas": [
+      "¿Qué excusas pongo yo para no acudir a la mesa del Señor?",
+      "¿Con qué obra concreta de amor o de perdón me presentaré esta semana con el traje de fiesta?"
+    ],
+    "oracion": "Señor Jesús, que nos invitas a tu mesa, danos un corazón dispuesto a responder a tu llamado y a vestirnos de caridad, de perdón y de esperanza. Amén.",
+    "vive": {
+      "intro": "El Señor no pasa de largo: quiere encontrarte en lo de cada día.",
+      "items": [
+        {
+          "titulo": "En tu casa y tu trabajo",
+          "texto": "ofrece tu día a Dios cada mañana y dale gracias por la noche."
+        },
+        {
+          "titulo": "En la Eucaristía",
+          "texto": "el domingo, la Misa es el encuentro con Cristo, la Piedra viva que sostiene a su Iglesia."
+        },
+        {
+          "titulo": "En el prójimo",
+          "texto": "visita al enfermo, acompaña al solo, comparte lo que tienes."
+        },
+        {
+          "titulo": "En el perdón",
+          "texto": "da hoy ese paso de reconciliación que has postergado."
+        },
+        {
+          "titulo": "En la comunidad",
+          "texto": "sirve a tu parroquia y sé parte de un grupo de apostolado."
+        },
+        {
+          "titulo": "En la oración",
+          "texto": "dedica cada día unos minutos a la Palabra y al Rosario en familia."
+        }
+      ]
+    },
+    "misas": {
+      "titulo": "Misas en la Parroquia San Benito de Palermo:",
+      "horarios": [
+        "Martes a Viernes 6:00 PM",
+        "Sábado 6:00 PM",
+        "Domingo 8:00 AM – 6:00 PM"
+      ]
+    },
+    "invitacion": [
+      "¡Te invitamos a participar en nuestra evangelización!",
+      "También puedes contribuir a nuestra obra apostólica con una donación. Escanea el código y haz un aporte a nuestra parroquia."
+    ]
+  },
+  {
     "id": "2026-10-04",
     "fecha": "2026-10-04",
     "fechaTexto": "Domingo 4 de octubre de 2026",
