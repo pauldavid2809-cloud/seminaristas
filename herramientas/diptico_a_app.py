@@ -110,7 +110,8 @@ def convertir(docx):
     evangelio = textos[i_proc + 1:i_refl]
     encabezado = evangelio[0]
     cierre_idx = next((k for k, t in enumerate(evangelio) if t.lower().startswith("palabra del señor")), len(evangelio))
-    evangelio_parrafos = evangelio[1:cierre_idx]
+    # Se descartan párrafos sueltos de solo puntuación (un "." de sobra en el .docx)
+    evangelio_parrafos = [t for t in evangelio[1:cierre_idx] if re.search(r"\w", t)]
     cierre = evangelio[cierre_idx] if cierre_idx < len(evangelio) else ""
 
     reflexion = textos[i_refl + 1:i_conv]
@@ -118,7 +119,10 @@ def convertir(docx):
     final = textos[i_conv + 1:]
     k_or = next((k for k, t in enumerate(final) if t.lower().startswith("oración")), len(final))
     preguntas = final[:k_or]
-    oracion = re.sub(r"^oración\s*:\s*", "", final[k_or], flags=re.I) if k_or < len(final) else ""
+    # La oración puede venir en el mismo párrafo que "Oración:" o en los siguientes
+    oracion = " ".join(
+        t for t in [re.sub(r"^oración\s*:\s*", "", final[k_or], flags=re.I), *final[k_or + 1:]] if t
+    ) if k_or < len(final) else ""
 
     fecha = fecha_iso(fecha_texto)
     return {
