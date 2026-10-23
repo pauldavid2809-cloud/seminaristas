@@ -1,0 +1,74 @@
+{
+  "id": "2026-11-15",
+  "fecha": "2026-11-15",
+  "fechaTexto": "Domingo 15 de noviembre de 2026",
+  "titulo": "Talentos para servir",
+  "cita": "Evangelio según san Mateo 25, 14-30",
+  "tiempo": "XXXIII Domingo del Tiempo Ordinario · Ciclo A",
+  "evangelio": {
+    "encabezado": "Lectura del santo Evangelio según san Mateo 25, 14-30",
+    "parrafos": [
+      "En aquel tiempo, Jesús dijo a sus discípulos esta parábola: \"El Reino de los cielos se parece también a un hombre que iba a salir de viaje a tierras lejanas; llamó a sus servidores de confianza y les encargó sus bienes. A uno le dio cinco talentos; a otro, dos; y a un tercero, uno, según la capacidad de cada uno, y luego se fue.",
+      "El que recibió cinco talentos fue enseguida a negociar con ellos y ganó otros cinco. El que recibió dos hizo lo mismo y ganó otros dos. En cambio, el que recibió un talento hizo un hoyo en la tierra y allí escondió el dinero de su señor.",
+      "Después de mucho tiempo regresó aquel hombre y llamó a cuentas a sus servidores.",
+      "Se acercó el que había recibido cinco talentos y le presentó otros cinco, diciendo: 'Señor, cinco talentos me dejaste; aquí tienes otros cinco, que con ellos he ganado'. Su señor le dijo: 'Te felicito, siervo bueno y fiel. Puesto que has sido fiel en cosas de poco valor, te confiaré cosas de mucho valor. Entra a tomar parte en la alegría de tu señor'.",
+      "Se acercó luego el que había recibido dos talentos y le dijo: 'Señor, dos talentos me dejaste; aquí tienes otros dos, que con ellos he ganado'. Su señor le dijo: 'Te felicito, siervo bueno y fiel. Puesto que has sido fiel en cosas de poco valor, te confiaré cosas de mucho valor. Entra a tomar parte en la alegría de tu señor'.",
+      "Finalmente, se acercó el que había recibido un talento y le dijo: 'Señor, yo sabía que eres un hombre duro, que quieres cosechar lo que no has plantado y recoger lo que no has sembrado. Por eso tuve miedo y fui a esconder tu talento bajo tierra. Aquí tienes lo tuyo'.",
+      "El señor le respondió: 'Siervo malo y perezoso. Sabías que cosecho lo que no he plantado y recojo lo que no he sembrado. ¿Por qué, entonces, no pusiste mi dinero en el banco, para que a mi regreso lo recibiera yo con intereses? Quítenle el talento y dénselo al que tiene diez. Pues al que tiene se le dará y le sobrará; pero al que tiene poco, se le quitará aun eso poco que tiene.",
+      "Y a este hombre inútil, échenlo fuera, a las tinieblas. Allí será el llanto y la desesperación'\"."
+    ],
+    "cierre": "Palabra del Señor. R/. Gloria a ti, Señor Jesús."
+  },
+  "reflexion": [
+    "Un hombre que se va de viaje confía sus bienes a tres servidores: a uno le da cinco talentos, a otro dos y a otro uno. Los dos primeros trabajan y duplican lo recibido. El tercero, por miedo, entierra su talento. Al volver, el señor felicita a los fieles y los invita a compartir su alegría.",
+    "Los talentos son todo lo que Dios nos regala: la vida, la fe, las capacidades, el tiempo y las personas que amamos. Nada es para guardarlo: se nos da para ponerlo al servicio de los demás. Dios no pide más de lo que podemos dar, pero sí que no nos quedemos de brazos cruzados.",
+    "El miedo y la comodidad nos llevan a enterrar lo que tenemos, sobre todo en tiempos difíciles, cuando pensamos que ya no hay nada que dar. Pero cada gesto cuenta: una visita, un consejo, un plato compartido, una oración. Así los talentos dan fruto en las obras de caridad y de misericordia, y Dios los multiplica.",
+    "Por eso te invitamos a poner tus dones a trabajar: reza cada día, participa en la Misa, sirve a tu comunidad y súmate a algún grupo de apostolado de la parroquia. Dios confía en ti, y quien confía en Él nunca queda con las manos vacías."
+  ],
+  "preguntas": [
+    "¿Qué talentos me ha dado Dios que todavía tengo enterrados?",
+    "¿Qué puedo hacer esta semana para ponerlos al servicio de alguien?"
+  ],
+  "oracion": "Señor Jesús, que nos confías tantos dones, quítanos el miedo y la pereza. Ayúdanos a ponerlos al servicio de nuestros hermanos para que den fruto de amor y de esperanza. Amén.",
+  "vive": {
+    "intro": "Dios te confió talentos: ¿en qué los pondrás a trabajar hoy?",
+    "items": [
+      {
+        "titulo": "Reconoce tus talentos",
+        "texto": "da gracias por lo que Dios te dio: salud, habilidades, tiempo y familia."
+      },
+      {
+        "titulo": "No los entierres",
+        "texto": "vence el miedo y la pereza, y empieza por un gesto pequeño."
+      },
+      {
+        "titulo": "En la oración",
+        "texto": "pide cada día a Dios que te muestre cómo usar lo que te dio."
+      },
+      {
+        "titulo": "En el prójimo",
+        "texto": "comparte tu tiempo, tus manos o lo que tengas con quien más lo necesita."
+      },
+      {
+        "titulo": "En las obras de misericordia",
+        "texto": "alimenta, visita y consuela; así tus talentos dan fruto."
+      },
+      {
+        "titulo": "En la comunidad",
+        "texto": "pon tus dones al servicio de la parroquia y de un grupo de apostolado."
+      }
+    ]
+  },
+  "misas": {
+    "titulo": "Misas en la Parroquia San Benito de Palermo:",
+    "horarios": [
+      "Martes a Viernes 6:00 PM",
+      "Sábado 6:00 PM",
+      "Domingo 8:00 AM – 6:00 PM"
+    ]
+  },
+  "invitacion": [
+    "¡Te invitamos a participar en nuestra evangelización!",
+    "También puedes contribuir a nuestra obra apostólica con una donación. Escanea el código y haz un aporte a nuestra parroquia."
+  ]
+}
