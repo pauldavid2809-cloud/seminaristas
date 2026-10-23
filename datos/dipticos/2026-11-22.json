@@ -1,0 +1,70 @@
+{
+  "id": "2026-11-22",
+  "fecha": "2026-11-22",
+  "fechaTexto": "Ciclo A · Domingo 22 de noviembre de 2026",
+  "titulo": "Cristo en el prójimo",
+  "cita": "Evangelio según san Mateo 25, 31-46",
+  "tiempo": "Cristo Rey del Universo · XXXIV Domingo T.O.",
+  "evangelio": {
+    "encabezado": "Lectura del santo Evangelio según san Mateo 25, 31-46",
+    "parrafos": [
+      "En aquel tiempo, Jesús dijo a sus discípulos: \"Cuando venga el Hijo del hombre, rodeado de su gloria, acompañado de todos sus ángeles, se sentará en su trono de gloria. Entonces serán congregadas ante él todas las naciones, y él apartará a los unos de los otros, como aparta el pastor a las ovejas de los cabritos, y pondrá a las ovejas a su derecha y a los cabritos a su izquierda.",
+      "Entonces dirá el rey a los de su derecha: 'Vengan, benditos de mi Padre; tomen posesión del Reino preparado para ustedes desde la creación del mundo; porque estuve hambriento y me dieron de comer, sediento y me dieron de beber, era forastero y me hospedaron, estuve desnudo y me vistieron, enfermo y me visitaron, encarcelado y fueron a verme'. Los justos le contestarán entonces: 'Señor, ¿cuándo te vimos hambriento y te dimos de comer, sediento y te dimos de beber? ¿Cuándo te vimos de forastero y te hospedamos, o desnudo y te vestimos? ¿Cuándo te vimos enfermo o encarcelado y te fuimos a ver?' Y el rey les dirá: 'Yo les aseguro que, cuando lo hicieron con el más insignificante de mis hermanos, conmigo lo hicieron'.",
+      "Entonces dirá también a los de su izquierda: 'Apártense de mí, malditos; vayan al fuego eterno, preparado para el diablo y sus ángeles; porque estuve hambriento y no me dieron de comer, sediento y no me dieron de beber, era forastero y no me hospedaron, estuve desnudo y no me vistieron, enfermo y encarcelado y no me visitaron'.",
+      "Entonces ellos le responderán: 'Señor, ¿cuándo te vimos hambriento o sediento, de forastero o desnudo, enfermo o encarcelado y no te asistimos?' Y él les replicará: 'Yo les aseguro que, cuando no lo hicieron con uno de aquellos más insignificantes, tampoco lo hicieron conmigo'. Entonces irán éstos al castigo eterno y los justos a la vida eterna\"."
+    ],
+    "cierre": "Palabra del Señor. R/. Gloria a ti, Señor Jesús."
+  },
+  "reflexion": [
+    "Hoy celebramos a Cristo Rey del Universo, pero su trono es distinto: es el de un pastor que cuida a su rebaño. Jesús cuenta que al final de los tiempos el Rey juzgará según una sola pregunta: ¿amaste? Dar de comer al hambriento, de beber al sediento, acoger al forastero, vestir al desnudo, visitar al enfermo y al preso.",
+    "Lo sorprendente es que el Rey se identifica con los más pequeños: «a mí me lo hicieron». Cada persona que sufre es una puerta para encontrarnos con Cristo. No hace falta ir lejos: está en el vecino necesitado, en el enfermo de la cuadra, en el que llora a nuestro lado.",
+    "Estas son las obras de misericordia, el modo concreto de reinar con Cristo. En tiempos difíciles, un plato compartido, una visita o una palabra de consuelo hacen presente su Reino de amor, de justicia y de paz, y renuevan la esperanza.",
+    "Por eso te invitamos a servir a Cristo en el hermano: reza cada día, participa en la Misa donde el Rey se hace alimento, perdona y súmate a algún grupo de apostolado de la parroquia. Al final, lo que queda es el amor."
+  ],
+  "preguntas": [
+    "¿A qué «hermano más pequeño» tengo cerca y todavía no he atendido?",
+    "¿Qué obra de misericordia puedo hacer esta semana?"
+  ],
+  "oracion": "Cristo Rey, que reinas desde el amor y el servicio, abre nuestros ojos para reconocerte en los más necesitados. Que tu Reino de paz y de esperanza crezca en nuestras casas y en nuestra parroquia. Amén.",
+  "vive": {
+    "intro": "Cristo Rey te espera en el hermano: ¿a quién servirás hoy?",
+    "items": [
+      {
+        "titulo": "Da de comer y de beber",
+        "texto": "comparte alimento o una ayuda con quien pasa necesidad."
+      },
+      {
+        "titulo": "Visita y acompaña",
+        "texto": "dedica tiempo a un enfermo, a un anciano, a un preso o a alguien que vive solo."
+      },
+      {
+        "titulo": "Viste y acoge",
+        "texto": "da la ropa que no usas y abre tu puerta a quien necesita ayuda."
+      },
+      {
+        "titulo": "En la Eucaristía",
+        "texto": "ven a la Misa a encontrar a Cristo Rey, que se hace pan para ti."
+      },
+      {
+        "titulo": "En el perdón",
+        "texto": "reconcíliate; el Reino de Cristo es de paz y de misericordia."
+      },
+      {
+        "titulo": "En la comunidad",
+        "texto": "sirve en la parroquia y únete a un grupo de apostolado."
+      }
+    ]
+  },
+  "misas": {
+    "titulo": "Misas en la Parroquia San Benito de Palermo:",
+    "horarios": [
+      "Martes a Viernes 6:00 PM",
+      "Sábado 6:00 PM",
+      "Domingo 8:00 AM – 6:00 PM"
+    ]
+  },
+  "invitacion": [
+    "¡Te invitamos a participar en nuestra evangelización!",
+    "También puedes contribuir a nuestra obra apostólica con una donación. Escanea el código y haz un aporte a nuestra parroquia."
+  ]
+}

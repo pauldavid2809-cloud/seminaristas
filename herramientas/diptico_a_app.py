@@ -112,6 +112,15 @@ def convertir(docx):
     cierre_idx = next((k for k, t in enumerate(evangelio) if t.lower().startswith("palabra del señor")), len(evangelio))
     # Se descartan párrafos sueltos de solo puntuación (un "." de sobra en el .docx)
     evangelio_parrafos = [t for t in evangelio[1:cierre_idx] if re.search(r"\w", t)]
+    # Un renglón que termina en coma y sigue en minúscula es la misma frase
+    # (las Bienaventuranzas vienen en versos: "Dichosos…," / "porque…")
+    unidos = []
+    for t in evangelio_parrafos:
+        if unidos and unidos[-1].endswith(",") and t[:1].islower():
+            unidos[-1] += " " + t
+        else:
+            unidos.append(t)
+    evangelio_parrafos = unidos
     cierre = evangelio[cierre_idx] if cierre_idx < len(evangelio) else ""
 
     reflexion = textos[i_refl + 1:i_conv]

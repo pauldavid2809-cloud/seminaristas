@@ -1,0 +1,70 @@
+{
+  "id": "2026-11-08",
+  "fecha": "2026-11-08",
+  "fechaTexto": "Domingo 8 de noviembre de 2026",
+  "titulo": "Con la lámpara encendida",
+  "cita": "Evangelio según san Mateo 25, 1-13",
+  "tiempo": "XXXII Domingo del Tiempo Ordinario · Ciclo A",
+  "evangelio": {
+    "encabezado": "Lectura del santo Evangelio según san Mateo 25, 1-13",
+    "parrafos": [
+      "En aquel tiempo, Jesús dijo a sus discípulos esta parábola: \"El Reino de los cielos es semejante a diez jóvenes, que tomando sus lámparas, salieron al encuentro del esposo. Cinco de ellas eran descuidadas y cinco, previsoras. Las descuidadas llevaron sus lámparas, pero no llevaron aceite para llenarlas de nuevo; las previsoras, en cambio, llevaron cada una un frasco de aceite junto con su lámpara. Como el esposo tardaba, les entró sueño a todas y se durmieron.",
+      "A medianoche se oyó un grito: '¡Ya viene el esposo! ¡Salgan a su encuentro!' Se levantaron entonces todas aquellas jóvenes y se pusieron a preparar sus lámparas, y las descuidadas dijeron a las previsoras: 'Dennos un poco de su aceite, porque nuestras lámparas se están apagando'. Las previsoras les contestaron: 'No, porque no va a alcanzar para ustedes y para nosotras. Vayan mejor a donde lo venden y cómprenlo'.",
+      "Mientras aquéllas iban a comprarlo, llegó el esposo, y las que estaban listas entraron con él al banquete de bodas y se cerró la puerta. Más tarde llegaron las otras jóvenes y dijeron: 'Señor, señor, ábrenos'. Pero él les respondió: 'Yo les aseguro que no las conozco'.",
+      "Estén pues, preparados, porque no saben ni el día ni la hora\"."
+    ],
+    "cierre": "Palabra del Señor. R/. Gloria a ti, Señor Jesús."
+  },
+  "reflexion": [
+    "Diez jóvenes esperan al esposo con sus lámparas. Cinco son sensatas y llevan aceite de reserva; cinco son necias y no lo llevan. El esposo tarda, todas se duermen y a medianoche suena el grito: «¡Ya viene el esposo!». Las necias se quedan sin luz y llegan tarde.",
+    "El esposo es Cristo, que viene a nuestro encuentro. El aceite es lo que mantiene encendida la fe: la oración, la Eucaristía, el perdón y las obras de amor. No se puede pedir prestado a última hora ni dejar para después: se va cuidando día a día.",
+    "Jesús no quiere asustarnos, sino despertarnos. Vigilar es vivir con esperanza, sabiendo que Dios llega y que nuestra espera no es en vano. En tiempos difíciles, la lámpara encendida es la fe que no se apaga y la caridad que sigue alumbrando al prójimo.",
+    "Por eso te invitamos a no dejar para mañana el encuentro con el Señor: reza cada día, participa en la Misa, perdona, sirve a tu comunidad y súmate a algún grupo de apostolado de la parroquia. Quien vive despierto no teme: el Señor siempre es bienvenido."
+  ],
+  "preguntas": [
+    "¿Qué le pongo de «aceite» a mi lámpara para alimentar mi fe?",
+    "¿Qué encuentro con Dios o con el prójimo estoy dejando para después?"
+  ],
+  "oracion": "Señor Jesús, Esposo que vienes a nuestro encuentro, mantén encendida nuestra lámpara con la oración, la caridad y la esperanza. Que nos encuentres siempre vigilantes. Amén.",
+  "vive": {
+    "intro": "Vigila y prepárate: ¿cómo mantendrás encendida tu lámpara?",
+    "items": [
+      {
+        "titulo": "Cuida tu aceite",
+        "texto": "alimenta tu fe cada día con la oración y la Palabra de Dios."
+      },
+      {
+        "titulo": "Está atento",
+        "texto": "no dejes para después lo importante; Dios pasa hoy por tu vida."
+      },
+      {
+        "titulo": "En la Eucaristía",
+        "texto": "ven a la Misa; allí Cristo, el Esposo, sale a tu encuentro."
+      },
+      {
+        "titulo": "En el prójimo",
+        "texto": "tu lámpara brilla en las obras de caridad y de misericordia."
+      },
+      {
+        "titulo": "En el perdón",
+        "texto": "reconcíliate hoy; no esperes a mañana."
+      },
+      {
+        "titulo": "En la comunidad",
+        "texto": "camina con otros: súmate a un grupo de apostolado y a la vida de la parroquia."
+      }
+    ]
+  },
+  "misas": {
+    "titulo": "Misas en la Parroquia San Benito de Palermo:",
+    "horarios": [
+      "Martes a Viernes 6:00 PM",
+      "Sábado 6:00 PM",
+      "Domingo 8:00 AM – 6:00 PM"
+    ]
+  },
+  "invitacion": [
+    "¡Te invitamos a participar en nuestra evangelización!",
+    "También puedes contribuir a nuestra obra apostólica con una donación. Escanea el código y haz un aporte a nuestra parroquia."
+  ]
+}

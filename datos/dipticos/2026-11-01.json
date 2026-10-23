@@ -1,0 +1,76 @@
+{
+  "id": "2026-11-01",
+  "fecha": "2026-11-01",
+  "fechaTexto": "Domingo 1 de noviembre de 2026",
+  "titulo": "Llamados a ser santos",
+  "cita": "Evangelio según san Mateo 5, 1-12",
+  "tiempo": "Solemnidad de Todos los Santos · Ciclo A",
+  "evangelio": {
+    "encabezado": "Lectura del santo Evangelio según san Mateo 5, 1-12",
+    "parrafos": [
+      "En aquel tiempo, cuando Jesús vio a la muchedumbre, subió al monte y se sentó. Entonces se le acercaron sus discípulos. Enseguida comenzó a enseñarles, hablándoles así:",
+      "\"Dichosos los pobres de espíritu, porque de ellos es el Reino de los cielos.",
+      "Dichosos los que lloran, porque serán consolados.",
+      "Dichosos los sufridos, porque heredarán la tierra.",
+      "Dichosos los que tienen hambre y sed de justicia, porque serán saciados.",
+      "Dichosos los misericordiosos, porque obtendrán misericordia.",
+      "Dichosos los limpios de corazón, porque verán a Dios.",
+      "Dichosos los que trabajan por la paz, porque se les llamará hijos de Dios.",
+      "Dichosos los perseguidos por causa de la justicia, porque de ellos es el Reino de los cielos.",
+      "Dichosos serán ustedes, cuando los injurien, los persigan y digan cosas falsas de ustedes por causa mía. Alégrense y salten de contento, porque su premio será grande en los cielos\"."
+    ],
+    "cierre": "Palabra del Señor. R/. Gloria a ti, Señor Jesús."
+  },
+  "reflexion": [
+    "Jesús sube al monte, se sienta y enseña a sus discípulos. Dice «felices» a los pobres de espíritu, a los que lloran, a los mansos, a los que tienen hambre de justicia, a los misericordiosos, a los limpios de corazón, a los que trabajan por la paz y a los perseguidos por su causa. Su felicidad no depende de tener mucho, sino de pertenecer a Dios.",
+    "Hoy celebramos a los santos: hombres y mujeres comunes que vivieron así. No fueron perfectos, pero dijeron sí a Dios cada día, en su casa, en su trabajo y con su prójimo. La santidad no es solo para unos pocos; es el llamado de todos los bautizados, también el tuyo.",
+    "Aun en tiempos difíciles, Jesús dice «felices». Es la alegría de saber que Dios nos sostiene y que el dolor no tiene la última palabra. Ese camino se recorre con la oración, la Eucaristía, el perdón, las obras de caridad y de misericordia y el servicio a los demás.",
+    "Por eso te invitamos a dar hoy un paso hacia la santidad: reza cada día, participa en la Misa, perdona, ayuda a tu vecino y súmate a un grupo de apostolado de la parroquia. Los santos nos acompañan con su oración, y la esperanza que nos dejaron no defrauda."
+  ],
+  "preguntas": [
+    "¿Cuál de las Bienaventuranzas me cuesta más vivir y por qué?",
+    "¿Qué paso concreto de santidad puedo dar esta semana?"
+  ],
+  "oracion": "Señor Jesús, que llamas a todos a la santidad, danos un corazón pobre, manso y misericordioso para vivir tus Bienaventuranzas. Que los santos intercedan por nosotros y por nuestra parroquia. Amén.",
+  "vive": {
+    "intro": "Las Bienaventuranzas son el camino de la santidad: ¿cuál vivirás hoy?",
+    "items": [
+      {
+        "titulo": "Sé pobre de espíritu",
+        "texto": "confía en Dios más que en lo que tienes y agradécele lo que recibes cada día."
+      },
+      {
+        "titulo": "Consuela y sé manso",
+        "texto": "acompaña a quien llora y responde con paz y paciencia."
+      },
+      {
+        "titulo": "Ten hambre de justicia",
+        "texto": "haz bien tu trabajo y trata con honradez a todos."
+      },
+      {
+        "titulo": "Sé misericordioso",
+        "texto": "perdona, visita al enfermo y comparte con quien lo necesita."
+      },
+      {
+        "titulo": "En la Eucaristía",
+        "texto": "ven a la Misa; los santos se hicieron santos alimentándose de Cristo."
+      },
+      {
+        "titulo": "Trabaja por la paz",
+        "texto": "empieza en tu casa y en tu cuadra, y únete a un grupo de apostolado de la parroquia."
+      }
+    ]
+  },
+  "misas": {
+    "titulo": "Misas en la Parroquia San Benito de Palermo:",
+    "horarios": [
+      "Martes a Viernes 6:00 PM",
+      "Sábado 6:00 PM",
+      "Domingo 8:00 AM – 6:00 PM"
+    ]
+  },
+  "invitacion": [
+    "¡Te invitamos a participar en nuestra evangelización!",
+    "También puedes contribuir a nuestra obra apostólica con una donación. Escanea el código y haz un aporte a nuestra parroquia."
+  ]
+}

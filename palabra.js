@@ -34,18 +34,28 @@ function isoLocal(fecha) {
   return `${fecha.getFullYear()}-${m}-${d}`;
 }
 
-/* El díptico "de esta semana": el más reciente cuyo domingo cae dentro de
-   los próximos 6 días (o ya pasó). Si todos son futuros, el más cercano. */
-function dipticoActual(hoy = new Date()) {
-  if (!LISTA_DIPTICOS.length) return null;
+/* Programación: el díptico de cada domingo aparece desde el VIERNES anterior
+   (DIAS_ANTES = 2 días antes del domingo). Los que aún no llegan a su viernes
+   no se ven: ni en el selector, ni con un enlace directo (?d=...).
+   Si todos son futuros, se muestra el más cercano. */
+const DIAS_ANTES = 2;
+
+function dipticosPublicados(hoy = new Date()) {
+  if (!LISTA_DIPTICOS.length) return [];
   const limite = new Date(hoy);
-  limite.setDate(limite.getDate() + 6);
+  limite.setDate(limite.getDate() + DIAS_ANTES);
   const tope = isoLocal(limite);
-  return LISTA_DIPTICOS.find((d) => d.fecha <= tope) || LISTA_DIPTICOS[LISTA_DIPTICOS.length - 1];
+  const publicados = LISTA_DIPTICOS.filter((d) => d.fecha <= tope);
+  return publicados.length ? publicados : [LISTA_DIPTICOS[LISTA_DIPTICOS.length - 1]];
 }
 
-function dipticoPorId(id) {
-  return LISTA_DIPTICOS.find((d) => d.id === id) || null;
+/* El díptico "de esta semana": el más reciente de los publicados */
+function dipticoActual(hoy = new Date()) {
+  return dipticosPublicados(hoy)[0] || null;
+}
+
+function dipticoPorId(id, hoy = new Date()) {
+  return dipticosPublicados(hoy).find((d) => d.id === id) || null;
 }
 
 /* Enlace a la página pública: solo muestra el díptico, nunca datos del censo */
@@ -166,12 +176,13 @@ function htmlDiptico(d) {
 
 /* Selector de dípticos anteriores (solo si hay más de uno) */
 function htmlSelectorDipticos(idActivo, idSemana) {
-  if (LISTA_DIPTICOS.length < 2) return "";
+  const lista = dipticosPublicados();
+  if (lista.length < 2) return "";
   return `
     <label class="diptico-selector">
       <span>Díptico</span>
       <select id="palabra-selector" aria-label="Elegir díptico">
-        ${LISTA_DIPTICOS.map(
+        ${lista.map(
           (d) =>
             `<option value="${escPalabra(d.id)}" ${d.id === idActivo ? "selected" : ""}>${escPalabra(
               d.fechaTexto
