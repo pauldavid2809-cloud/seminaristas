@@ -100,7 +100,31 @@ const CATEGORIAS = [
       "¿Algún enfermo desea que le lleven la comunión o recibir la unción de los enfermos en casa?",
     mensaje: "que un sacerdote le lleve la comunión o la unción de los enfermos",
   },
+  {
+    slug: "panales_adulto",
+    etiqueta: "Pañales de adulto",
+    emoji: "🧓",
+    pregunta:
+      "¿Hay algún adulto mayor o persona encamada que use pañales y la familia necesite ayuda para conseguirlos?",
+    mensaje: "la ayuda con pañales de adulto que la parroquia puede donarle",
+  },
+  {
+    slug: "panales_nino",
+    etiqueta: "Pañales de niño",
+    emoji: "👶",
+    pregunta:
+      "¿Hay algún bebé o niño que use pañales y la familia necesite ayuda para conseguirlos?",
+    mensaje: "la ayuda con pañales de niño que la parroquia puede donarle",
+  },
 ];
+
+/* Pestaña Pañales: tipos, estados con palabras de donación y filtros */
+const TIPOS_PANAL = {
+  panales_adulto: { etiqueta: "Adultos", emoji: "🧓", singular: "de adulto" },
+  panales_nino: { etiqueta: "Niños", emoji: "👶", singular: "de niño" },
+};
+const ESTADOS_PANALES = { pendiente: "Por donar", en_proceso: "En proceso", atendido: "Entregado" };
+const panalesFiltro = { tipo: "", sector: "", estado: "por_donar", texto: "" };
 
 const ESTADOS = {
   pendiente: { etiqueta: "Pendiente", clase: "est-pendiente" },
@@ -469,6 +493,8 @@ function cargarInstantanea() {
 }
 
 function mensajeError(e) {
+  if (/personas_categorias_check/.test(e && e.message))
+    return "Falta activar los pañales en Supabase (hay que correr el SQL de supabase-panales.sql). Mientras tanto, quita esa categoría para guardar.";
   return errorDeRed(e) || !sb
     ? "Sin señal: este cambio necesita conexión. Las casas nuevas sí se pueden registrar sin señal."
     : e.message;
@@ -531,6 +557,27 @@ async function refrescarStats() {
     cont.innerHTML = `<div class="card vacio-card">⚠️ No se pudieron cargar las estadísticas.<span class="texto-suave">${esc(
       e.message
     )}</span></div>`;
+  }
+}
+
+async function refrescarPanales() {
+  if (!CENSO_CONFIGURADO) {
+    renderSinConfigurar("#panales-contenido");
+    return;
+  }
+  if (!sb && !cargarInstantanea()) {
+    renderSinConexion("#panales-contenido");
+    return;
+  }
+  const cont = $("#panales-contenido");
+  if (!censoCargado) cont.innerHTML = `<div class="card vacio-card">Cargando la lista de pañales…</div>`;
+  try {
+    await asegurarDatos();
+    renderPanales();
+  } catch (e) {
+    cont.innerHTML = `<div class="card vacio-card">⚠️ No se pudo cargar la lista.<span class="texto-suave">${esc(
+      e.message
+    )}</span><br><button class="btn btn-secundario" data-accion="reintentar-panales">${icono("recargar")} Reintentar</button></div>`;
   }
 }
 
@@ -884,7 +931,7 @@ function renderFormulario() {
     titulo = "Registrar casa";
     cuerpo = `
       ${camposCasa()}
-      <div id="form-personas">${bloquePersona()}</div>
+      <div id="form-personas">${bloquePersona(form.categorias ? { categorias: form.categorias } : {})}</div>
       <button type="button" class="btn btn-suave btn-bloque" data-accion="agregar-bloque">
         ${icono("personaMas")} Agregar otra persona de esta casa
       </button>
@@ -1041,6 +1088,7 @@ async function guardarFormulario() {
     cerrarFormulario();
     await cargarCenso();
     renderLista();
+    if (vistaActual === "panales") renderPanales();
     if (vistaActual === "mapa") renderMapa();
   } catch (e) {
     mostrarErrorForm(`No se pudo guardar. ${mensajeError(e)}`);
@@ -1485,6 +1533,7 @@ async function cambiarEstado(id, estado) {
   const { persona } = buscarPersona(id);
   if (persona) persona.estado = estado;
   renderLista();
+  if (vistaActual === "panales") renderPanales();
 }
 
 async function eliminarPersona(id) {
@@ -2112,6 +2161,199 @@ function renderSinConexion(sel) {
     </div>`;
 }
 
+/* ---------- Pañales (lista para donar) ---------- */
+
+const esCategoriaPanal = (slug) => slug in TIPOS_PANAL;
+
+/* Una fila por persona que necesita pañales, con su casa */
+function personasPanales() {
+  return casasCenso.flatMap((casa) =>
+    casa.personas.filter((p) => p.categorias.some(esCategoriaPanal)).map((persona) => ({ persona, casa }))
+  );
+}
+
+function panalCoincide({ persona, casa }) {
+  const f = panalesFiltro;
+  if (f.tipo && !persona.categorias.includes(f.tipo)) return false;
+  if (f.sector && String(casa.sector_id) !== f.sector) return false;
+  if (f.estado === "por_donar" && persona.estado === "atendido") return false;
+  if (f.estado === "entregado" && persona.estado !== "atendido") return false;
+  if (f.texto) {
+    const t = f.texto.toLowerCase();
+    const pajar = [persona.nombre, casa.familia, casa.direccion, casa.sector, formatoLocal(casa.telefono), persona.notas]
+      .join(" ")
+      .toLowerCase();
+    if (!pajar.includes(t)) return false;
+  }
+  return true;
+}
+
+function panalesFiltrados() {
+  return personasPanales()
+    .filter(panalCoincide)
+    .sort(
+      (a, b) =>
+        a.casa.sector.localeCompare(b.casa.sector, "es", { numeric: true }) ||
+        a.casa.direccion.localeCompare(b.casa.direccion, "es") ||
+        a.persona.nombre.localeCompare(b.persona.nombre, "es")
+    );
+}
+
+function tiposPanalDe(persona) {
+  return persona.categorias.filter(esCategoriaPanal);
+}
+
+function mensajePanales(persona) {
+  const nombre = persona.nombre.split(" ")[0];
+  const tipos = tiposPanalDe(persona).map((t) => TIPOS_PANAL[t].singular);
+  const queTipo = tipos.length ? `pañales ${tipos.join(" y ")}` : "pañales";
+  return `Saludos, le escribimos de la Parroquia San Benito de Palermo 🙏. Queremos coordinar con usted la entrega de ${queTipo} para ${nombre}. ¿Cuándo podemos llevárselos?`;
+}
+
+function cardPanal({ persona, casa }) {
+  const est = ESTADOS[persona.estado] || ESTADOS.pendiente;
+  const badges = tiposPanalDe(persona)
+    .map((t) => `<span class="badge cat">${TIPOS_PANAL[t].emoji} Pañales ${TIPOS_PANAL[t].singular}</span>`)
+    .join("");
+  return `
+    <div class="card panal-card ${persona.estado === "atendido" ? "panal-entregado" : ""}">
+      <div class="panal-cab">
+        <div class="panal-info">
+          <strong class="persona-nombre">${esc(persona.nombre)}${persona.edad != null ? ` <span class="persona-edad">· ${persona.edad} años</span>` : ""}</strong>
+          <div class="persona-censo-badges">${badges}<span class="zona-pill">${puntoZona(casa.sector_id)}${esc(zonaConSanto(casa.sector))}</span></div>
+        </div>
+        <select class="select-estado ${est.clase}" data-accion="cambiar-estado" data-id="${persona.id}" aria-label="Estado de la donación">
+          ${Object.entries(ESTADOS_PANALES)
+            .map(([k, v]) => `<option value="${k}" ${k === persona.estado ? "selected" : ""}>${v}</option>`)
+            .join("")}
+        </select>
+      </div>
+      <div class="casa-linea">${icono("pin")}<span>${esc(casa.direccion)}</span></div>
+      ${casa.familia ? `<div class="casa-linea">🏠 <span>${esc(casa.familia)}</span></div>` : ""}
+      ${
+        casa.telefono
+          ? `<div class="casa-linea">${icono("tel")}<a href="tel:${esc(casa.telefono)}">${esc(formatoLocal(casa.telefono))}</a></div>`
+          : ""
+      }
+      ${persona.notas ? `<p class="persona-nota">📝 ${esc(persona.notas)}</p>` : ""}
+      <div class="casa-acciones">
+        ${
+          tieneUbicacion(casa)
+            ? `<a class="btn btn-principal btn-chip" href="${linkComoLlegar(casa)}" target="_blank" rel="noopener">${icono("ruta")} <span class="txt-largo">Cómo llegar</span><span class="txt-corto">Llegar</span></a>`
+            : `<span class="texto-suave">sin ubicación</span>`
+        }
+        <span class="espaciador"></span>
+        ${
+          casa.telefono
+            ? `<a class="btn btn-whatsapp btn-chip" href="${linkWhatsApp(casa.telefono, mensajePanales(persona))}" target="_blank" rel="noopener">WhatsApp</a>`
+            : ""
+        }
+        <button class="btn btn-icono" data-accion="editar-persona" data-id="${persona.id}" title="Editar" aria-label="Editar persona">${icono("editar")}</button>
+      </div>
+    </div>`;
+}
+
+function renderPanalesLista() {
+  const cont = $("#panales-lista");
+  if (!cont) return;
+  const todas = personasPanales();
+  if (!todas.length) {
+    cont.innerHTML = `
+      <div class="card vacio-card">
+        <span class="vacio-icono">🧷</span>
+        <strong>Todavía no hay nadie en esta lista</strong>
+        <span class="texto-suave">Al registrar una casa, marca en la persona <strong>🧓 Pañales de adulto</strong> o <strong>👶 Pañales de niño</strong> y aparecerá aquí.</span>
+      </div>`;
+    return;
+  }
+  const lista = panalesFiltrados();
+  const casas = new Set(lista.map((x) => x.casa.id)).size;
+  const hayFiltros = panalesFiltro.texto || panalesFiltro.tipo || panalesFiltro.sector || panalesFiltro.estado !== "por_donar";
+  cont.innerHTML = `
+    <p class="censo-contador">${plural(lista.length, "persona")} · ${plural(casas, "casa")}${hayFiltros ? " (con filtros)" : ""}</p>
+    ${lista.map(cardPanal).join("") || `<div class="card vacio-card">Nadie coincide con los filtros.</div>`}`;
+}
+
+function renderPanales(opciones = {}) {
+  if (opciones.soloLista) {
+    renderPanalesLista();
+    return;
+  }
+  const todas = personasPanales();
+  const porDonar = (tipo) => todas.filter((x) => x.persona.categorias.includes(tipo) && x.persona.estado !== "atendido").length;
+  const entregados = todas.filter((x) => x.persona.estado === "atendido").length;
+  const f = panalesFiltro;
+  $("#panales-contenido").innerHTML = `
+    <div class="kpis">
+      <div class="kpi destacado"><span class="kpi-valor">${porDonar("panales_adulto")}</span><span class="kpi-etiqueta">🧓 Adultos por donar</span></div>
+      <div class="kpi"><span class="kpi-valor">${porDonar("panales_nino")}</span><span class="kpi-etiqueta">👶 Niños por donar</span></div>
+      <div class="kpi"><span class="kpi-valor">${entregados}</span><span class="kpi-etiqueta">Entregados</span></div>
+    </div>
+    <div class="censo-filtros">
+      <div class="buscador">
+        ${icono("buscar")}
+        <input type="search" id="panales-texto" placeholder="Buscar nombre, dirección, familia…" value="${esc(f.texto)}" />
+      </div>
+      <div class="filtro-chips">
+        <button class="cat-chip ${!f.tipo ? "activo" : ""}" data-accion="panales-tipo" data-tipo="">Todos</button>
+        ${Object.entries(TIPOS_PANAL)
+          .map(
+            ([slug, t]) =>
+              `<button class="cat-chip ${f.tipo === slug ? "activo" : ""}" data-accion="panales-tipo" data-tipo="${slug}">${t.emoji} ${t.etiqueta}</button>`
+          )
+          .join("")}
+      </div>
+      <div class="filtro-fila">
+        <select id="panales-sector" aria-label="Zona">
+          <option value="">Todas las zonas</option>
+          ${sectoresCenso
+            .map(
+              (z) =>
+                `<option value="${z.id}" ${String(z.id) === f.sector ? "selected" : ""}>${esc(zonaConSanto(z.nombre))}</option>`
+            )
+            .join("")}
+        </select>
+        <select id="panales-estado" aria-label="Estado de la donación">
+          <option value="por_donar" ${f.estado === "por_donar" ? "selected" : ""}>Por donar</option>
+          <option value="entregado" ${f.estado === "entregado" ? "selected" : ""}>Entregados</option>
+          <option value="" ${f.estado === "" ? "selected" : ""}>Todos</option>
+        </select>
+        <button class="btn btn-icono" data-accion="recargar-panales" title="Recargar" aria-label="Recargar">${icono("recargar")}</button>
+        <button class="btn btn-icono" data-accion="exportar-panales" title="Descargar esta lista en Excel" aria-label="Descargar esta lista en Excel">${icono("descargar")}</button>
+      </div>
+    </div>
+    <div id="panales-lista"></div>`;
+  renderPanalesLista();
+}
+
+/* Excel con la lista tal como está filtrada (para quien va a donar) */
+function exportarPanales() {
+  if (typeof XLSX === "undefined") {
+    alert("No se pudo cargar el generador de Excel. Revisa tu conexión a internet e inténtalo de nuevo.");
+    return;
+  }
+  const lista = panalesFiltrados();
+  if (!lista.length) {
+    alert("No hay nadie en la lista con estos filtros.");
+    return;
+  }
+  const filas = lista.map(({ persona, casa }) => ({
+    Zona: zonaConSanto(casa.sector),
+    Persona: persona.nombre,
+    Edad: persona.edad ?? "",
+    Pañales: tiposPanalDe(persona).map((t) => TIPOS_PANAL[t].etiqueta).join(" y "),
+    Estado: ESTADOS_PANALES[persona.estado] || ESTADOS_PANALES.pendiente,
+    Familia: casa.familia || "",
+    Dirección: casa.direccion,
+    Teléfono: formatoLocal(casa.telefono),
+    "Notas de la persona": persona.notas || "",
+    "Ubicación (Google Maps)": tieneUbicacion(casa) ? linkVerEnGoogleMaps(casa) : "",
+  }));
+  const libro = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(libro, XLSX.utils.json_to_sheet(filas), "Pañales");
+  XLSX.writeFile(libro, `panales-san-benito-${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
 /* ---------- Navegación entre pestañas ---------- */
 
 function mostrarVista(id) {
@@ -2133,6 +2375,7 @@ function irA(id, opciones) {
   mostrarVista(id);
   if (id === "censo") refrescarCenso();
   if (id === "stats") refrescarStats();
+  if (id === "panales") refrescarPanales();
   if (id === "mapa") refrescarMapa({ vistaInicial: true, ...opciones });
   if (id === "palabra") renderPalabra();
 }
@@ -2157,7 +2400,10 @@ document.addEventListener("click", (ev) => {
         alert("Para registrar sin señal, abre la app al menos una vez con conexión.");
         return;
       }
-      form = { modo: "nueva-casa" };
+      form = {
+        modo: "nueva-casa",
+        categorias: vistaActual === "panales" && panalesFiltro.tipo ? [panalesFiltro.tipo] : undefined,
+      };
       renderFormulario();
       break;
     case "cerrar-form":
@@ -2253,6 +2499,21 @@ document.addEventListener("click", (ev) => {
     case "exportar-pdf":
       window.print();
       break;
+    case "panales-tipo":
+      panalesFiltro.tipo = el.dataset.tipo;
+      renderPanales();
+      break;
+    case "exportar-panales":
+      exportarPanales();
+      break;
+    case "reintentar-panales":
+      censoCargado = false;
+      refrescarPanales();
+      break;
+    case "recargar-panales":
+      censoCargado = false;
+      refrescarPanales();
+      break;
   }
 });
 
@@ -2280,6 +2541,12 @@ document.addEventListener("change", (ev) => {
   } else if (el.id === "stats-filtro-sector") {
     statsSector = el.value;
     renderStats();
+  } else if (el.id === "panales-sector") {
+    panalesFiltro.sector = el.value;
+    renderPanales();
+  } else if (el.id === "panales-estado") {
+    panalesFiltro.estado = el.value;
+    renderPanales();
   }
 });
 
@@ -2287,6 +2554,9 @@ document.addEventListener("input", (ev) => {
   if (ev.target.id === "filtro-texto") {
     filtros.texto = ev.target.value;
     renderLista();
+  } else if (ev.target.id === "panales-texto") {
+    panalesFiltro.texto = ev.target.value;
+    renderPanales({ soloLista: true });
   }
 });
 
@@ -2385,6 +2655,7 @@ window.addEventListener("online", async () => {
   if (usandoInstantanea && sb) {
     if (vistaActual === "censo") refrescarCenso();
     else if (vistaActual === "stats") refrescarStats();
+    else if (vistaActual === "panales") refrescarPanales();
     else if (vistaActual === "mapa") refrescarMapa({ recargar: true });
   }
 });

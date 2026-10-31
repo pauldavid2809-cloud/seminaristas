@@ -46,7 +46,8 @@ create table personas (
                  check (array_length(categorias, 1) >= 1
                         and categorias <@ array[
                           'enfermo','primera_comunion','confirmacion',
-                          'vulnerable','bautizo','matrimonio','uncion'
+                          'vulnerable','bautizo','matrimonio','uncion',
+                          'panales_adulto','panales_nino'
                         ]::text[]),
   notas          text,
   estado         text not null default 'pendiente'
