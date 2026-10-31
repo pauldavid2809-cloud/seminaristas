@@ -2644,3 +2644,48 @@ body.pagina-enfermos {
     justify-content: center;
   }
 }
+
+/* ---------- Pestaña Pañales (lista para donar) ---------- */
+
+.panal-card {
+  padding: 14px 16px 12px;
+}
+
+.panal-cab {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.panal-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.panal-card .select-estado {
+  flex-shrink: 0;
+}
+
+.panal-card .casa-acciones {
+  padding: 10px 0 0;
+}
+
+.panal-entregado {
+  opacity: 0.72;
+}
+
+.kpi-etiqueta {
+  line-height: 1.25;
+}
+
+/* Cinco pestañas en la barra inferior */
+.tabs {
+  gap: 2px;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+.tab span {
+  font-size: 0.66rem;
+}
