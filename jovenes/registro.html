@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#1d3a5f" />
+  <meta name="robots" content="noindex" />
+  <title>Anótate · Jóvenes San Benito de Palermo</title>
+  <link rel="icon" href="../img/logo-san-benito.jpg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" crossorigin="anonymous" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
+  <link rel="stylesheet" href="../styles.css?v=31" />
+  <link rel="stylesheet" href="jovenes.css?v=1" />
+</head>
+<!-- Registro público de jóvenes (se llega con el QR). Solo escribe: no puede leer nada. -->
+<body class="pagina-jovenes">
+  <header class="appbar">
+    <div class="appbar-marca">
+      <span class="appbar-logo"><img src="../img/logo-san-benito.jpg" alt="" /></span>
+      <div>
+        <p class="appbar-sobre">Parroquia San Benito de Palermo</p>
+        <h1 class="appbar-titulo">Jóvenes</h1>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="portada" class="card jov-portada">
+      <h2>¡Anótate en el grupo de jóvenes! 🙌</h2>
+      <p>Llena estos datos (toma 1 minuto) y te contactaremos para invitarte a las actividades de la parroquia.</p>
+    </section>
+
+    <div id="aviso-ya" class="jov-aviso" hidden>
+      Ya te anotaste desde este teléfono. Si quieres anotar a otra persona, llena el formulario de nuevo.
+    </div>
+
+    <form id="form" class="jov-form" novalidate autocomplete="on">
+      <div class="form-seccion">
+        <span class="form-seccion-titulo">Tus datos</span>
+        <div class="form-campo">
+          <label for="f-nombre">Nombre y apellido *</label>
+          <input id="f-nombre" type="text" autocomplete="name" maxlength="120" placeholder="María Pérez" />
+        </div>
+        <div class="form-campo">
+          <label for="f-nacimiento">Fecha de nacimiento *</label>
+          <input id="f-nacimiento" type="date" min="1970-01-01" autocomplete="bday" />
+        </div>
+        <div class="form-campo">
+          <label for="f-telefono">Tu teléfono (WhatsApp) *</label>
+          <input id="f-telefono" type="tel" inputmode="tel" autocomplete="tel" placeholder="0414-1234567" />
+        </div>
+        <div class="form-campo">
+          <label for="f-redes">Redes sociales <span class="texto-suave" style="display: inline">(opcional)</span></label>
+          <input id="f-redes" type="text" maxlength="200" autocomplete="off" placeholder="Instagram, TikTok, Facebook… Ej: @maria_perez" />
+        </div>
+      </div>
+
+      <div id="bloque-menor" class="form-seccion jov-menor" hidden>
+        <span class="form-seccion-titulo">Como eres menor de edad…</span>
+        <p class="ayuda">Necesitamos los datos de tu papá, mamá o representante.</p>
+        <div class="form-campo">
+          <label for="f-repr">Nombre y apellido del representante *</label>
+          <input id="f-repr" type="text" maxlength="120" placeholder="Ana Pérez (mamá)" />
+        </div>
+        <div class="form-campo">
+          <label for="f-telrepr">Teléfono (WhatsApp) del representante *</label>
+          <input id="f-telrepr" type="tel" inputmode="tel" placeholder="0412-1234567" />
+        </div>
+      </div>
+
+      <!-- Trampa para programas que llenan todo: una persona real nunca lo ve ni lo llena -->
+      <div class="jov-trampa" aria-hidden="true">
+        <label for="f-sitio">No llenar</label>
+        <input id="f-sitio" type="text" tabindex="-1" autocomplete="off" />
+      </div>
+
+      <label class="consentimiento">
+        <input id="f-autoriza" type="checkbox" />
+        <span><strong>Autorizo</strong> (yo, o mi representante si soy menor de edad) que la Parroquia San Benito de Palermo guarde estos datos para contactarme sobre las actividades de los jóvenes. *</span>
+      </label>
+
+      <p id="f-error" class="form-error" role="alert" hidden></p>
+      <button id="f-enviar" type="submit" class="btn btn-principal btn-bloque jov-enviar">Anotarme</button>
+      <p class="ayuda jov-privado">🔒 Tus datos solo los ve el equipo de jóvenes de la parroquia.</p>
+    </form>
+
+    <section id="exito" class="card jov-exito" hidden>
+      <span class="jov-exito-icono">🎉</span>
+      <h2 id="exito-titulo">¡Listo!</h2>
+      <p>Quedaste anotado(a) en el grupo de jóvenes de la Parroquia San Benito de Palermo. Pronto te contactaremos por WhatsApp.</p>
+      <a id="exito-grupo" class="btn btn-whatsapp jov-grupo" href="#" target="_blank" rel="noopener" hidden>Unirme al grupo de WhatsApp</a>
+      <button id="exito-otra" type="button" class="btn btn-secundario">Anotar a otra persona</button>
+    </section>
+
+    <p class="pie-publico">Parroquia San Benito de Palermo · Arquidiócesis de Maracaibo</p>
+  </main>
+
+  <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../config.js?v=2"></script>
+  <script src="comun.js?v=2"></script>
+  <script src="registro.js?v=2"></script>
+</body>
+</html>

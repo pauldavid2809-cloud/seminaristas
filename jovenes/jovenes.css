@@ -1,0 +1,309 @@
+/* ==========================================================================
+   Jóvenes de la parroquia: registro público y página privada /jovenes
+   (se apoya en ../styles.css)
+   ========================================================================== */
+
+body.pagina-jovenes {
+  padding-bottom: calc(32px + var(--seguro-abajo));
+}
+
+.jov-portada {
+  background: linear-gradient(135deg, var(--primario-oscuro), var(--primario));
+  color: #fff;
+  border: 0;
+}
+
+.jov-portada h2 {
+  font-size: 1.25rem;
+  line-height: 1.25;
+  margin-bottom: 6px;
+  color: #fff;
+}
+
+.jov-portada p {
+  font-size: 0.92rem;
+  opacity: 0.92;
+}
+
+.jov-aviso {
+  background: var(--ambar-suave);
+  color: var(--primario-oscuro);
+  border-radius: var(--radio-sm);
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  margin-bottom: 12px;
+}
+
+.jov-menor {
+  background: var(--acento-claro);
+  border-color: #ecd49a;
+}
+
+.jov-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+.jov-check input,
+.consentimiento input {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  accent-color: var(--primario);
+}
+
+.form-campo select {
+  width: 100%;
+}
+
+/* Campo escondido para atrapar programas que llenan todo */
+.jov-trampa {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.jov-enviar {
+  padding: 14px;
+  font-size: 1rem;
+}
+
+.jov-privado {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.jov-exito {
+  text-align: center;
+  padding: 28px 20px;
+}
+
+.jov-exito-icono {
+  font-size: 2.6rem;
+  display: block;
+}
+
+.jov-exito h2 {
+  margin: 6px 0 8px;
+}
+
+.jov-exito p {
+  color: var(--tinta-suave);
+  margin-bottom: 16px;
+}
+
+.jov-exito .btn {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  text-align: center;
+  padding: 12px;
+}
+
+/* ---------- Página privada /jovenes ---------- */
+
+.jov-salir {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.jov-login {
+  max-width: 420px;
+  margin: 24px auto;
+}
+
+.jov-login h2 {
+  margin-bottom: 4px;
+}
+
+.jov-login .texto-suave {
+  margin-bottom: 14px;
+  display: block;
+}
+
+.jov-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.joven-card {
+  padding: 14px 16px 12px;
+}
+
+.joven-cab {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.joven-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.joven-card .select-estado {
+  flex-shrink: 0;
+}
+
+.joven-redes {
+  overflow-wrap: anywhere;
+}
+
+.joven-repr {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 8px 0 4px;
+  padding: 8px 10px;
+  border-radius: var(--radio-sm);
+  background: var(--acento-claro);
+  font-size: 0.84rem;
+  color: var(--primario-oscuro);
+}
+
+.joven-repr a {
+  color: var(--primario);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.joven-nota {
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-sm);
+  font: inherit;
+  font-size: 0.84rem;
+  background: var(--fondo);
+  resize: vertical;
+}
+
+.joven-card .casa-acciones {
+  padding: 10px 0 0;
+}
+
+/* ---------- Afiche con el QR ---------- */
+
+body.afiche {
+  background: #e8eef6;
+  padding: 16px;
+}
+
+.afiche-botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.afiche-hoja {
+  max-width: 560px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 20px;
+  padding: 32px 28px 24px;
+  text-align: center;
+  box-shadow: var(--sombra);
+  border-top: 10px solid var(--acento);
+}
+
+.afiche-logo {
+  width: 96px;
+  height: 96px;
+  border-radius: 20px;
+  object-fit: cover;
+}
+
+.afiche-sobre {
+  margin-top: 8px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--primario);
+}
+
+.afiche-hoja h1 {
+  font-size: 2.2rem;
+  line-height: 1.1;
+  margin: 10px 0 4px;
+  color: var(--primario-oscuro);
+}
+
+.afiche-sub {
+  font-size: 1.05rem;
+  color: var(--tinta-suave);
+  margin-bottom: 14px;
+}
+
+.afiche-qr {
+  width: min(100%, 380px);
+  height: auto;
+  image-rendering: pixelated;
+}
+
+.afiche-paso {
+  font-size: 0.92rem;
+  color: var(--tinta);
+  margin: 8px 0 6px;
+}
+
+.afiche-url {
+  font-size: 0.78rem;
+  color: var(--tinta-tenue);
+  overflow-wrap: anywhere;
+}
+
+.afiche-pie {
+  margin-top: 14px;
+  font-size: 0.76rem;
+  color: var(--tinta-tenue);
+}
+
+@media print {
+  body.afiche {
+    background: #fff;
+    padding: 0;
+  }
+
+  .afiche-botones {
+    display: none;
+  }
+
+  .afiche-hoja {
+    box-shadow: none;
+    max-width: none;
+    border-radius: 0;
+    padding-top: 48px;
+  }
+
+  .afiche-hoja h1 {
+    font-size: 3rem;
+  }
+
+  .afiche-qr {
+    width: 420px;
+  }
+
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+}
+
+/* Los elementos con [hidden] deben ocultarse aunque otra regla les ponga display */
+.pagina-jovenes [hidden] {
+  display: none !important;
+}

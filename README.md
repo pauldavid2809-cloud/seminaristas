@@ -57,7 +57,15 @@ La app instalada busca la versión nueva cada vez que se abre con señal. Al cam
 2. Ejecutar: `python3 herramientas/diptico_a_app.py ruta/al/diptico.docx`
 3. El script guarda el .docx y sus datos en `datos/dipticos/AAAA-MM-DD.*` (fecha del domingo) y regenera `dipticos.js`. Subir los cambios a `main` y GitHub Pages lo publica.
 
-La app muestra sola el díptico de la semana: el más reciente cuyo domingo cae dentro de los próximos 6 días.
+La app muestra sola el díptico de la semana: cada díptico aparece desde el **viernes** anterior a su domingo (`DIAS_ANTES = 2` en `palabra.js`) y los que aún no llegan a su viernes no se ven, ni en el selector ni con enlace directo. Se pueden subir varios por adelantado.
+
+## Jóvenes de la parroquia (registro por QR)
+
+- **`jovenes/registro.html`**: página pública a la que lleva el QR. Pide nombre y apellido, fecha de nacimiento, teléfono (WhatsApp), redes sociales y, si es menor de 18 años, nombre y teléfono del representante. Solo puede escribir: con la clave pública no se puede leer nada.
+- **`jovenes/`** (`/seminaristas/jovenes/`): lista privada. Pide correo y clave (usuario de Supabase Auth) y solo deja ver los datos al correo guardado en `jovenes_admins`. Filtros por estado y edad, búsqueda, notas, WhatsApp al joven y a su representante, y descarga en Excel.
+- **`jovenes/afiche.html`**: afiche con el QR para imprimir. El QR (`qr-jovenes.png` / `.svg`) apunta a `registro.html`; si cambia la dirección, regenerarlo con `node herramientas/hacer_qr.js`.
+- **Activarlo** (una sola vez): (1) en Supabase → Authentication → Users → Add user, crear el usuario con correo y clave (marcar "Auto Confirm User"); (2) en `supabase-jovenes.sql` cambiar `PON-AQUI-TU-CORREO` por ese correo y correrlo en el SQL Editor.
+- Para que aparezca el enlace de un grupo o canal de WhatsApp al terminar de anotarse, ponerlo en `JOVENES_GRUPO_WHATSAPP` (`jovenes/comun.js`).
 
 ## Reutilizar la estructura para un censo nuevo
 

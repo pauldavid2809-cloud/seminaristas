@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <title>QR de jóvenes · San Benito de Palermo</title>
+  <link rel="icon" href="../img/logo-san-benito.jpg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" crossorigin="anonymous" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
+  <link rel="stylesheet" href="../styles.css?v=31" />
+  <link rel="stylesheet" href="jovenes.css?v=1" />
+</head>
+<!-- Afiche para imprimir (o compartir): el QR lleva a registro.html -->
+<body class="afiche">
+  <div class="afiche-botones">
+    <button type="button" class="btn btn-principal" onclick="window.print()">🖨️ Imprimir</button>
+    <a class="btn btn-secundario" href="qr-jovenes.png" download="qr-jovenes-san-benito.png">Descargar QR (PNG)</a>
+    <a class="btn btn-secundario" href="qr-jovenes.svg" download="qr-jovenes-san-benito.svg">QR para imprenta (SVG)</a>
+  </div>
+
+  <article class="afiche-hoja">
+    <img class="afiche-logo" src="../img/logo-san-benito.jpg" alt="Parroquia San Benito de Palermo" />
+    <p class="afiche-sobre">Parroquia San Benito de Palermo</p>
+    <h1>¡Únete a los jóvenes!</h1>
+    <p class="afiche-sub">Anótate en el grupo de jóvenes de la parroquia</p>
+    <img class="afiche-qr" src="qr-jovenes.png" alt="Código QR para anotarse en el grupo de jóvenes" />
+    <p class="afiche-paso"><strong>1.</strong> Abre la cámara de tu teléfono &nbsp; <strong>2.</strong> Apunta al código &nbsp; <strong>3.</strong> Llena tus datos</p>
+    <p class="afiche-url" id="url"></p>
+    <p class="afiche-pie">Maracaibo · Arquidiócesis de Maracaibo</p>
+  </article>
+
+  <script>
+    document.getElementById("url").textContent = new URL("registro.html", location.href).href.replace(/^https?:\/\//, "");
+  </script>
+</body>
+</html>

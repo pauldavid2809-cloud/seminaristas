@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#1d3a5f" />
+  <meta name="robots" content="noindex" />
+  <title>Jóvenes · San Benito de Palermo</title>
+  <link rel="icon" href="../img/logo-san-benito.jpg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" crossorigin="anonymous" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
+  <link rel="stylesheet" href="../styles.css?v=31" />
+  <link rel="stylesheet" href="jovenes.css?v=1" />
+</head>
+<!-- Lista privada de jóvenes: solo la ve el correo autorizado en Supabase (ver supabase-jovenes.sql) -->
+<body class="pagina-jovenes">
+  <header class="appbar">
+    <div class="appbar-marca">
+      <span class="appbar-logo"><img src="../img/logo-san-benito.jpg" alt="" /></span>
+      <div>
+        <p class="appbar-sobre">Parroquia San Benito de Palermo</p>
+        <h1 class="appbar-titulo">Jóvenes</h1>
+      </div>
+    </div>
+    <button id="btn-salir" type="button" class="btn btn-chip jov-salir" data-accion="salir" hidden>Salir</button>
+  </header>
+
+  <main>
+    <section id="login" class="card jov-login" hidden>
+      <h2>Entrar</h2>
+      <p class="texto-suave">Solo para el encargado de los jóvenes.</p>
+      <form id="form-login" novalidate>
+        <div class="form-campo">
+          <label for="l-correo">Correo</label>
+          <input id="l-correo" type="email" autocomplete="username" placeholder="tucorreo@ejemplo.com" />
+        </div>
+        <div class="form-campo">
+          <label for="l-clave">Clave</label>
+          <input id="l-clave" type="password" autocomplete="current-password" />
+        </div>
+        <p id="l-error" class="form-error" role="alert" hidden></p>
+        <button id="l-entrar" type="submit" class="btn btn-principal btn-bloque">Entrar</button>
+      </form>
+    </section>
+
+    <div id="cargando" class="card vacio-card">Cargando…</div>
+
+    <section id="panel" hidden>
+      <div id="resumen"></div>
+      <div class="jov-acciones">
+        <a class="btn btn-suave btn-chip" href="afiche.html" target="_blank" rel="noopener">📱 QR para imprimir</a>
+        <button class="btn btn-suave btn-chip" data-accion="copiar-enlace" type="button">🔗 Copiar enlace de registro</button>
+      </div>
+      <div class="censo-filtros">
+        <div class="buscador">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+          <input type="search" id="filtro-texto" placeholder="Buscar nombre, teléfono, redes…" />
+        </div>
+        <div class="filtro-fila">
+          <select id="filtro-estado" aria-label="Estado">
+            <option value="">Estado</option>
+          </select>
+          <select id="filtro-edad" aria-label="Edad">
+            <option value="">Edad</option>
+            <option value="menores">Menores de 18</option>
+            <option value="mayores">18 o más</option>
+          </select>
+          <button class="btn btn-icono" data-accion="recargar" type="button" title="Recargar" aria-label="Recargar">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7" /><path d="M20 4v7h-7" /></svg>
+          </button>
+          <button class="btn btn-icono" data-accion="exportar" type="button" title="Descargar en Excel" aria-label="Descargar en Excel">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M4 19h16" /></svg>
+          </button>
+        </div>
+      </div>
+      <div id="lista"></div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="../config.js?v=2"></script>
+  <script src="comun.js?v=2"></script>
+  <script src="jovenes.js?v=1"></script>
+</body>
+</html>
