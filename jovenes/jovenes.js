@@ -6,7 +6,8 @@
 
 "use strict";
 
-const sb = crearCliente();
+limpiarSesionVieja();
+const sb = crearCliente({ conSesion: true });
 const $ = (s) => document.querySelector(s);
 const filtro = { texto: "", estado: "", edad: "" };
 let jovenes = [];

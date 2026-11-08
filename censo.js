@@ -18,7 +18,11 @@ const CENSO_CONFIGURADO =
    preguntas y el resto de la interfaz deben funcionar igual */
 const sb =
   CENSO_CONFIGURADO && window.supabase
-    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        // Siempre como visitante: las reglas de estas tablas son para la clave pública.
+        // Si otra página del mismo sitio (como /jovenes) guardó una sesión, no se usa.
+        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+      })
     : null;
 
 /* Leaflet (mapas) también viene de un CDN y puede faltar sin señal */
