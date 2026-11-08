@@ -10,7 +10,11 @@
 
 const sb =
   typeof SUPABASE_URL === "string" && window.supabase
-    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        // Siempre como visitante: las reglas de estas tablas son para la clave pública.
+        // Si otra página del mismo sitio (como /jovenes) guardó una sesión, no se usa.
+        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+      })
     : null;
 const HAY_MAPAS = typeof window.L !== "undefined";
 const GEO_ZONAS = typeof ZONAS_GEO !== "undefined" ? ZONAS_GEO : [];

@@ -70,8 +70,27 @@ function tablaNoExiste(e) {
   return /PGRST205|42P01/.test(t) || (/jovenes/.test(t) && /schema cache|does not exist/i.test(t));
 }
 
-function crearCliente() {
-  return typeof SUPABASE_URL === "string" && window.supabase
-    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-    : null;
+/* Cliente de Supabase. Sin opciones = visitante (clave pública), sin guardar
+   ni leer sesiones. La lista privada pide guardar su sesión en un espacio
+   PROPIO (SESION_JOVENES): si usara el de por defecto, el censo del mismo sitio
+   la leería y dejaría de ver sus datos (sus reglas son para visitantes). */
+const SESION_JOVENES = "sb-jovenes-auth";
+
+function crearCliente({ conSesion = false } = {}) {
+  if (typeof SUPABASE_URL !== "string" || !window.supabase) return null;
+  const auth = conSesion
+    ? { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storageKey: SESION_JOVENES }
+    : { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false };
+  return window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth });
+}
+
+/* Quita la sesión que versiones anteriores de /jovenes dejaron en el espacio
+   compartido del sitio (la leía el censo y lo dejaba vacío) */
+function limpiarSesionVieja() {
+  try {
+    const ref = new URL(SUPABASE_URL).hostname.split(".")[0];
+    localStorage.removeItem(`sb-${ref}-auth-token`);
+  } catch {
+    /* sin almacenamiento */
+  }
 }
